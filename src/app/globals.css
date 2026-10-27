@@ -1,120 +1,102 @@
 /* ==========================================================================
-   BILLING ERP - #46C81A SIGNATURE VIBRANT GREEN THEME DESIGN SYSTEM
+   EASYGST BILLING ERP - LIGHT GREEN THEME DESIGN SYSTEM
+   Exact UI Interface Style Replication
    ========================================================================== */
 
 :root {
-  /* Exact #46C81A Vivid Green Color Tokens */
-  --primary-50: #f2fcf0;
-  --primary-100: #e2f8dc;
-  --primary-200: #c8f3be;
-  --primary-300: #a7ec97;
-  --primary-400: #7adb63;
-  --primary-500: #55d424;
-  --primary-600: #46C81A; /* Signature Requested Color: #46C81A */
-  --primary-700: #38a514;
-  --primary-800: #2c8410;
-  --primary-900: #22690d;
-  --primary-950: #0f3704;
+  /* Brand Green Tokens */
+  --brand-green: #16a34a;
+  --brand-green-hover: #15803d;
+  --brand-green-dark: #166534;
+  --brand-green-light: #dcfce7;
+  --brand-green-subtle: #f0fdf4;
+  --brand-green-border: #bbf7d0;
 
-  /* Accent Brand Colors */
-  --brand-emerald: #46C81A;
-  --brand-emerald-hover: #38a514;
-  --brand-emerald-light: #f2fcf0;
-  --brand-emerald-border: #a7ec97;
-  --brand-gradient: linear-gradient(135deg, #46C81A 0%, #309410 100%);
-  --brand-glow: 0 4px 20px -2px rgba(70, 200, 26, 0.35);
+  /* App Surface & Background (Curved Floating Layout Theme with Light Full Background) */
+  --bg-app: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-sidebar: #041a10;
+  --bg-header: #ffffff;
+  --bg-muted: #f8fafc;
+  --bg-hover: #f1f5f9;
+
+  /* Sidebar Tokens (Ultra Dark Green Theme) */
+  --sidebar-bg: #041a10;
+  --sidebar-border: #0a291b;
+  --sidebar-text: #a7f3d0;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: #16a34a;
+  --sidebar-active-text: #ffffff;
+  --sidebar-category-text: #4ade80;
+  --sidebar-cta-bg: #16a34a;
+  --sidebar-cta-hover: #22c55e;
+  --sidebar-cta-text: #ffffff;
+
+  /* Text Tokens */
+  --text-main: #111827;
+  --text-secondary: #374151;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --text-inverted: #ffffff;
+
+  /* Border Tokens */
+  --border-light: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-focus: #16a34a;
+
+  /* Overview Card Accents */
+  --color-collect-bg: #ffffff;
+  --color-collect-border: #e2e8f0;
+  --color-collect-text: #15803d;
+  --color-collect-badge: #dcfce7;
+  --color-collect-icon: #16a34a;
+
+  --color-pay-bg: #ffffff;
+  --color-pay-border: #e2e8f0;
+  --color-pay-text: #dc2626;
+  --color-pay-badge: #fee2e2;
+  --color-pay-icon: #ef4444;
+
+  --color-balance-bg: #ffffff;
+  --color-balance-border: #e2e8f0;
+  --color-balance-text: #1d4ed8;
+  --color-balance-badge: #dbeafe;
+  --color-balance-icon: #2563eb;
 
   /* Nature Group Colors */
-  --nature-asset-bg: #f2fcf0;
-  --nature-asset-text: #29800e;
-  --nature-asset-border: #a7ec97;
+  --nature-asset-bg: #f0fdf4;
+  --nature-asset-text: #166534;
+  --nature-asset-border: #bbf7d0;
 
   --nature-expenses-bg: #fef2f2;
-  --nature-expenses-text: #b91c1c;
+  --nature-expenses-text: #991b1b;
   --nature-expenses-border: #fecaca;
 
   --nature-income-bg: #eff6ff;
-  --nature-income-text: #1d4ed8;
+  --nature-income-text: #1e40af;
   --nature-income-border: #bfdbfe;
 
   --nature-liability-bg: #faf5ff;
-  --nature-liability-text: #7e22ce;
+  --nature-liability-text: #6b21a8;
   --nature-liability-border: #e9d5ff;
 
-  /* Light Mode Palette */
-  --bg-app: #f7faf7;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #ffffff;
-  --bg-sidebar: #ffffff;
-  --bg-header: rgba(255, 255, 255, 0.92);
-  --bg-muted: #f0f6ef;
-  --bg-hover: #f2fcf0;
-  --bg-active: #e2f8dc;
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 
-  --text-main: #0f172a;
-  --text-muted: #526353;
-  --text-subtle: #849685;
-  --text-inverted: #ffffff;
-
-  --border-light: #dfeadc;
-  --border-subtle: #eef5eb;
-  --border-focus: #46C81A;
-
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-
+  /* Radii */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --radius-xl: 18px;
   --radius-pill: 9999px;
 
+  /* Typography */
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-/* Dark Mode Overrides */
-[data-theme="dark"] {
-  --bg-app: #030d04;
-  --bg-surface: #071909;
-  --bg-surface-elevated: #0d2810;
-  --bg-sidebar: #051407;
-  --bg-header: rgba(7, 25, 9, 0.88);
-  --bg-muted: #0e3012;
-  --bg-hover: #144018;
-  --bg-active: #195220;
-
-  --text-main: #f1f8f2;
-  --text-muted: #95ad97;
-  --text-subtle: #67806a;
-  --text-inverted: #030d04;
-
-  --border-light: #144018;
-  --border-subtle: #0f2e12;
-  --border-focus: #46C81A;
-
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
-
-  --nature-asset-bg: rgba(70, 200, 26, 0.18);
-  --nature-asset-text: #7adb63;
-  --nature-asset-border: rgba(70, 200, 26, 0.4);
-
-  --nature-expenses-bg: rgba(220, 38, 38, 0.2);
-  --nature-expenses-text: #fca5a5;
-  --nature-expenses-border: rgba(239, 68, 68, 0.35);
-
-  --nature-income-bg: rgba(37, 99, 235, 0.2);
-  --nature-income-text: #93c5fd;
-  --nature-income-border: rgba(59, 130, 246, 0.35);
-
-  --nature-liability-bg: rgba(147, 51, 234, 0.2);
-  --nature-liability-text: #d8b4fe;
-  --nature-liability-border: rgba(168, 85, 247, 0.35);
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 /* Base Resets */
@@ -131,8 +113,7 @@ html, body {
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  overflow: hidden;
 }
 
 button {
@@ -148,48 +129,28 @@ input, select, textarea {
   outline: none;
 }
 
-/* Custom Scrollbar */
+/* Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-light);
+  background: #cbd5e1;
   border-radius: var(--radius-pill);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-emerald);
+  background: #94a3b8;
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.15); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
 .animate-fade-in {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.pulse-indicator {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #46C81A;
-  box-shadow: 0 0 0 0 rgba(70, 200, 26, 0.7);
-  animation: pulseGlow 2s infinite ease-in-out;
+  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
