@@ -2,11 +2,13 @@
 
 import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import styles from "./page.module.css";
-import { LedgerGroup, Ledger, NatureGroup } from "../types/erp";
+import { LedgerGroup, Ledger, NatureGroup, OpeningBill } from "../types/erp";
 import { INITIAL_LEDGER_GROUPS } from "../data/initialLedgerGroups";
 import { INITIAL_LEDGERS } from "../data/initialLedgers";
 
 const emptySubscribe = () => () => {};
+
+const LEDGER_STEPS = ["Basics", "Contact", "Tax & bank", "Balance"] as const;
 
 const NATURE_OPTIONS: { key: NatureGroup; label: string; badgeClass: string }[] = [
   { key: "Asset", label: "Asset", badgeClass: styles.badgeAsset },
@@ -20,6 +22,8 @@ export default function Home() {
 
   // Navigation: Only working accounting masters (Groups & Ledgers)
   const [currentView, setCurrentView] = useState<"groups" | "ledgers">("groups");
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
 
   // -------------------------------------------------------------
@@ -30,6 +34,10 @@ export default function Home() {
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
+    const savedTheme = localStorage.getItem("easygst_theme");
+    const initialTheme = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+    document.documentElement.dataset.theme = initialTheme;
+    setTheme(initialTheme);
     const savedGroups = localStorage.getItem("easygst_v3_groups");
     if (savedGroups) {
       try {
@@ -48,6 +56,13 @@ export default function Home() {
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem("easygst_theme", nextTheme);
+  };
 
   const [selectedNatureFilter, setSelectedNatureFilter] = useState<"All" | NatureGroup>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,14 +85,41 @@ export default function Home() {
   // Ledger Modal State
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [editingLedgerId, setEditingLedgerId] = useState<string | null>(null);
+  const [ledgerStep, setLedgerStep] = useState(0);
+  const [openingBalanceCollapsed, setOpeningBalanceCollapsed] = useState(false);
   const [ledgerFormData, setLedgerFormData] = useState({
     name: "",
     underGroup: "Primary",
     nature: "Asset" as NatureGroup,
     openingBalance: 0,
     balanceType: "Dr" as "Dr" | "Cr",
+    openingBalanceDate: "",
+    openingBalanceReference: "",
+    openingBalanceNotes: "",
+    openingBills: [] as OpeningBill[],
+    code: "",
+    trackBillByBill: false,
+    creditDays: 0,
+    creditLimit: 0,
+    gstRegistrationType: "Unregistered" as "Regular" | "Consumer" | "Unregistered",
+    pan: "",
+    cin: "",
+    pincode: "",
+    country: "India",
+    state: "",
+    mobile: "",
+    whatsapp: "",
+    email: "",
+    website: "",
+    contactPerson: "",
+    hasBankDetails: false,
+    bankName: "",
+    bankAccountNumber: "",
+    bankIfsc: "",
+    bankBranch: "",
     gstin: "",
-    address: "",
+
+    addressLines: [""],
     phone: "",
   });
 
@@ -290,21 +332,57 @@ export default function Home() {
 
   const handleOpenAddLedgerModal = (presetNature?: NatureGroup) => {
     setEditingLedgerId(null);
+    setLedgerStep(0);
     const defaultGroup =
       ledgerGroups.find((g) => (presetNature ? g.nature === presetNature : g.nature === "Asset"))?.name ||
       ledgerGroups[0]?.name ||
       "Primary";
     const matched = ledgerGroups.find((g) => g.name === defaultGroup);
     const nature = matched ? matched.nature : presetNature || "Asset";
+    const defaultBalanceType = nature === "Asset" || nature === "Expenses" ? "Dr" : "Cr";
+    const today = new Date().toISOString().slice(0, 10);
+    const initialBill: OpeningBill = {
+      id: "bill-" + Date.now(),
+      reference: "",
+      billDate: today,
+      dueDate: "",
+      amount: 0,
+      balanceType: defaultBalanceType,
+    };
 
     setLedgerFormData({
       name: "",
       underGroup: defaultGroup,
       nature,
       openingBalance: 0,
-      balanceType: nature === "Asset" || nature === "Expenses" ? "Dr" : "Cr",
+      balanceType: defaultBalanceType,
+      openingBalanceDate: today,
+      openingBalanceReference: "",
+      openingBalanceNotes: "",
+      openingBills: [initialBill],
+      code: "",
+      trackBillByBill: false,
+      creditDays: 0,
+      creditLimit: 0,
+      gstRegistrationType: "Unregistered" as "Regular" | "Consumer" | "Unregistered",
+      pan: "",
+      cin: "",
+      pincode: "",
+      country: "India",
+      state: "",
+      mobile: "",
+      whatsapp: "",
+      email: "",
+      website: "",
+      contactPerson: "",
+      hasBankDetails: false,
+      bankName: "",
+      bankAccountNumber: "",
+      bankIfsc: "",
+      bankBranch: "",
       gstin: "",
-      address: "",
+
+      addressLines: [""],
       phone: "",
     });
     setIsLedgerModalOpen(true);
@@ -313,56 +391,200 @@ export default function Home() {
 
   const handleOpenEditLedgerModal = (ledger: Ledger) => {
     setEditingLedgerId(ledger.id);
+    setLedgerStep(0);
+    const bills: OpeningBill[] = (ledger.openingBills && ledger.openingBills.length > 0)
+      ? ledger.openingBills
+      : [{
+          id: "bill-1",
+          reference: ledger.openingBalanceReference || "",
+          billDate: ledger.openingBalanceDate || "",
+          dueDate: "",
+          amount: ledger.openingBalance || 0,
+          balanceType: ledger.balanceType || (ledger.nature === "Asset" || ledger.nature === "Expenses" ? "Dr" : "Cr"),
+        }];
+
     setLedgerFormData({
       name: ledger.name,
       underGroup: ledger.underGroup,
       nature: ledger.nature,
       openingBalance: ledger.openingBalance,
       balanceType: ledger.balanceType,
+      openingBalanceDate: ledger.openingBalanceDate || "",
+      openingBalanceReference: ledger.openingBalanceReference || "",
+      openingBalanceNotes: ledger.openingBalanceNotes || "",
+      openingBills: bills,
+      code: ledger.code || "",
+      trackBillByBill: !!ledger.trackBillByBill,
+      creditDays: ledger.creditDays || 0,
+      creditLimit: ledger.creditLimit || 0,
+      gstRegistrationType: ledger.gstRegistrationType || "Unregistered",
+      pan: ledger.pan || "",
+      cin: ledger.cin || "",
+      pincode: ledger.pincode || "",
+      country: ledger.country || "India",
+      state: ledger.state || "",
+      mobile: ledger.mobile || "",
+      whatsapp: ledger.whatsapp || "",
+      email: ledger.email || "",
+      website: ledger.website || "",
+      contactPerson: ledger.contactPerson || "",
+      hasBankDetails: !!ledger.hasBankDetails,
+      bankName: ledger.bankName || "",
+      bankAccountNumber: ledger.bankAccountNumber || "",
+      bankIfsc: ledger.bankIfsc || "",
+      bankBranch: ledger.bankBranch || "",
       gstin: ledger.gstin || "",
-      address: ledger.address || "",
+
+      addressLines: ledger.addressLines?.length ? ledger.addressLines : ledger.address ? ledger.address.split("\n") : [""],
       phone: ledger.phone || "",
     });
     setIsLedgerModalOpen(true);
   };
 
+  const openingBillsNet = useMemo(() => {
+    return ledgerFormData.openingBills.reduce((acc, bill) => {
+      const amt = Number(bill.amount) || 0;
+      return bill.balanceType === "Cr" ? acc - amt : acc + amt;
+    }, 0);
+  }, [ledgerFormData.openingBills]);
+
+  const totalOpeningBalance = Math.abs(openingBillsNet);
+  const totalBalanceType: "Dr" | "Cr" = openingBillsNet < 0
+    ? "Cr"
+    : openingBillsNet > 0
+      ? "Dr"
+      : (ledgerFormData.openingBills[0]?.balanceType || ledgerFormData.balanceType || "Dr");
+
+  const updateOpeningBill = (id: string, changes: Partial<OpeningBill>) => {
+    setLedgerFormData((previous) => {
+      const nextBills = previous.openingBills.map((bill) =>
+        bill.id === id ? { ...bill, ...changes } : bill
+      );
+      const net = nextBills.reduce((acc, b) => {
+        const amt = Number(b.amount) || 0;
+        return b.balanceType === "Cr" ? acc - amt : acc + amt;
+      }, 0);
+      const nextBalanceType: "Dr" | "Cr" = net < 0 ? "Cr" : net > 0 ? "Dr" : (nextBills[0]?.balanceType || previous.balanceType);
+      return {
+        ...previous,
+        openingBills: nextBills,
+        openingBalance: Math.abs(net),
+        balanceType: nextBalanceType,
+        openingBalanceDate: nextBills.find((b) => b.billDate)?.billDate || previous.openingBalanceDate,
+        openingBalanceReference: nextBills.find((b) => b.reference.trim())?.reference || previous.openingBalanceReference,
+      };
+    });
+  };
+
+  const addOpeningBill = () => {
+    setLedgerFormData((previous) => {
+      const defaultType = previous.balanceType || (previous.nature === "Asset" || previous.nature === "Expenses" ? "Dr" : "Cr");
+      const lastBill = previous.openingBills[previous.openingBills.length - 1];
+      const newBill: OpeningBill = {
+        id: "bill-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+        reference: "",
+        billDate: lastBill?.billDate || previous.openingBalanceDate || new Date().toISOString().slice(0, 10),
+        dueDate: lastBill?.dueDate || "",
+        amount: 0,
+        balanceType: lastBill?.balanceType || defaultType,
+      };
+      return {
+        ...previous,
+        openingBills: [...previous.openingBills, newBill],
+        trackBillByBill: true,
+      };
+    });
+  };
+
+  const removeOpeningBill = (id: string) => {
+    setLedgerFormData((previous) => {
+      let nextBills = previous.openingBills.filter((bill) => bill.id !== id);
+      if (nextBills.length === 0) {
+        nextBills = [{
+          id: "bill-" + Date.now(),
+          reference: "",
+          billDate: "",
+          dueDate: "",
+          amount: 0,
+          balanceType: previous.balanceType || "Dr",
+        }];
+      }
+      const net = nextBills.reduce((acc, b) => {
+        const amt = Number(b.amount) || 0;
+        return b.balanceType === "Cr" ? acc - amt : acc + amt;
+      }, 0);
+      const nextBalanceType: "Dr" | "Cr" = net < 0 ? "Cr" : net > 0 ? "Dr" : (nextBills[0]?.balanceType || previous.balanceType);
+      return {
+        ...previous,
+        openingBills: nextBills,
+        openingBalance: Math.abs(net),
+        balanceType: nextBalanceType,
+      };
+    });
+  };
+
   const handleSaveLedger = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ledgerFormData.name.trim()) return;
-
-    if (editingLedgerId) {
-      const updated = ledgers.map((l) =>
-        l.id === editingLedgerId
-          ? {
-              ...l,
-              name: ledgerFormData.name.trim(),
-              underGroup: ledgerFormData.underGroup,
-              nature: ledgerFormData.nature,
-              openingBalance: Number(ledgerFormData.openingBalance) || 0,
-              balanceType: ledgerFormData.balanceType,
-              gstin: ledgerFormData.gstin.trim() || undefined,
-              address: ledgerFormData.address.trim() || undefined,
-              phone: ledgerFormData.phone.trim() || undefined,
-            }
-          : l
-      );
-      persistLedgers(updated);
-    } else {
-      const newLedger: Ledger = {
-        id: `led-${Date.now()}`,
-        name: ledgerFormData.name.trim(),
-        underGroup: ledgerFormData.underGroup,
-        nature: ledgerFormData.nature,
-        openingBalance: Number(ledgerFormData.openingBalance) || 0,
-        balanceType: ledgerFormData.balanceType,
-        gstin: ledgerFormData.gstin.trim() || undefined,
-        address: ledgerFormData.address.trim() || undefined,
-        phone: ledgerFormData.phone.trim() || undefined,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      persistLedgers([newLedger, ...ledgers]);
+    if (ledgerStep < LEDGER_STEPS.length - 1) {
+      setLedgerStep((step) => step + 1);
+      return;
     }
 
+    const validBills = ledgerFormData.openingBills.filter((bill) => (Number(bill.amount) || 0) > 0 || bill.reference.trim() !== "");
+    const netAmt = validBills.reduce((acc, b) => {
+      const amt = Number(b.amount) || 0;
+      return b.balanceType === "Cr" ? acc - amt : acc + amt;
+    }, 0);
+    const finalBalance = Math.abs(netAmt);
+    const finalBalanceType: "Dr" | "Cr" = netAmt < 0 ? "Cr" : netAmt > 0 ? "Dr" : (ledgerFormData.openingBills[0]?.balanceType || ledgerFormData.balanceType || "Dr");
+
+    const addressLines = ledgerFormData.addressLines.map((line) => line.trim()).filter(Boolean);
+    const details = {
+      name: ledgerFormData.name.trim(),
+      code: ledgerFormData.code.trim() || undefined,
+      underGroup: ledgerFormData.underGroup,
+      nature: ledgerFormData.nature,
+      trackBillByBill: validBills.length > 0 ? true : ledgerFormData.trackBillByBill,
+      creditDays: Number(ledgerFormData.creditDays) || 0,
+      creditLimit: Number(ledgerFormData.creditLimit) || 0,
+      openingBalance: finalBalance,
+      balanceType: finalBalanceType,
+      openingBalanceDate: validBills[0]?.billDate || ledgerFormData.openingBalanceDate || undefined,
+      openingBalanceReference: validBills[0]?.reference.trim() || ledgerFormData.openingBalanceReference.trim() || undefined,
+      openingBalanceNotes: ledgerFormData.openingBalanceNotes.trim() || undefined,
+      openingBills: validBills.map((bill) => ({
+        ...bill,
+        reference: bill.reference.trim(),
+        amount: Number(bill.amount) || 0,
+      })),
+      address: addressLines.join("\n") || undefined,
+      addressLines,
+      pincode: ledgerFormData.pincode.trim() || undefined,
+      country: ledgerFormData.country.trim() || undefined,
+      state: ledgerFormData.state.trim() || undefined,
+      phone: ledgerFormData.phone.trim() || undefined,
+      mobile: ledgerFormData.mobile.trim() || undefined,
+      whatsapp: ledgerFormData.whatsapp.trim() || undefined,
+      email: ledgerFormData.email.trim() || undefined,
+      website: ledgerFormData.website.trim() || undefined,
+      contactPerson: ledgerFormData.contactPerson.trim() || undefined,
+      pan: ledgerFormData.pan.trim() || undefined,
+      cin: ledgerFormData.cin.trim() || undefined,
+      gstRegistrationType: ledgerFormData.gstRegistrationType,
+      gstin: ledgerFormData.gstin.trim() || undefined,
+      hasBankDetails: ledgerFormData.hasBankDetails,
+      bankName: ledgerFormData.hasBankDetails ? ledgerFormData.bankName.trim() || undefined : undefined,
+      bankAccountNumber: ledgerFormData.hasBankDetails ? ledgerFormData.bankAccountNumber.trim() || undefined : undefined,
+      bankIfsc: ledgerFormData.hasBankDetails ? ledgerFormData.bankIfsc.trim() || undefined : undefined,
+      bankBranch: ledgerFormData.hasBankDetails ? ledgerFormData.bankBranch.trim() || undefined : undefined,
+    };
+
+    if (editingLedgerId) {
+      persistLedgers(ledgers.map((ledger) => ledger.id === editingLedgerId ? { ...ledger, ...details } : ledger));
+    } else {
+      persistLedgers([{ id: "led-" + Date.now(), ...details, createdAt: new Date().toISOString().split("T")[0] }, ...ledgers]);
+    }
     setIsLedgerModalOpen(false);
   };
 
@@ -382,191 +604,101 @@ export default function Home() {
   };
 
   return (
-    <div className={styles.erpContainer}>
+    <div className={styles.erpContainer + " " + (theme === "dark" ? styles.themeDark : styles.themeGhost)}>
       {/* -------------------------------------------------------------
           LEFT SIDEBAR: ONLY ACCOUNTING MASTERS (EasyGST Light Green UI)
           ------------------------------------------------------------- */}
+      {sidebarVisible && (
       <aside className={styles.sidebar}>
-        {/* Brand Header */}
         <div className={styles.brandHeader}>
           <div className={styles.brandLeft}>
-            <div className={styles.sidebarUserAvatar}>RH</div>
+            <span className={styles.productLogo} aria-hidden="true" />
             <div className={styles.brandText}>
-              <div className={styles.brandName}>
-                <span>Ramesh Hardware</span>
-              </div>
-              <span className={styles.brandSubtitle}>9619766319</span>
+              <span className={styles.brandName}>EasyGST <span className={styles.brandNameAccent}>Billing</span></span>
+              <span className={styles.brandSubtitle}>BILLING &amp; ACCOUNTS</span>
             </div>
           </div>
-
-          <button className={styles.collapseSidebarBtn} title="Collapse Sidebar">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+          <button type="button" className={styles.hideSidebarBtn} onClick={() => setSidebarVisible(false)} aria-label="Hide sidebar" title="Hide sidebar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
           </button>
         </div>
+        <div className={styles.workspaceIdentity}>
+          <span className={styles.workspaceAvatar} aria-hidden="true">RH</span>
+          <span><strong>Ramesh Hardware</strong><small>9619766319</small></span>
+        </div>
 
-        {/* Primary Action Button */}
-        <div className={styles.sidebarCtaWrapper} style={{ position: "relative" }}>
-          <button
-            id="btn-create-master-cta"
-            onClick={() => {
-              if (currentView === "groups") {
-                handleOpenAddModal();
-              } else {
-                handleOpenAddLedgerModal();
-              }
-            }}
-            className={styles.createInvoiceBtn}
-            title={currentView === "groups" ? "Create New Group" : "Create New Ledger"}
-          >
-            <div className={styles.createInvoiceLeft}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+        <div className={styles.sidebarCtaWrapper}>
+          <div className={styles.sidebarCreateControl}>
+            <button
+              id="btn-create-master-cta"
+              type="button"
+              onClick={() => currentView === "groups" ? handleOpenAddModal() : handleOpenAddLedgerModal()}
+              className={styles.createInvoiceBtn}
+              title={currentView === "groups" ? "Create New Group" : "Create New Ledger"}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
               <span>{currentView === "groups" ? "Create Group" : "Create Ledger"}</span>
-            </div>
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setCreateDropdownOpen(!createDropdownOpen);
-              }}
-              style={{ display: "flex", alignItems: "center", padding: "2px 4px" }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-          </button>
-
-          {/* Quick Action Dropdown */}
+            </button>
+            <button type="button" className={styles.createDropdownToggle} aria-label="Choose what to create" aria-expanded={createDropdownOpen} onClick={() => setCreateDropdownOpen(!createDropdownOpen)}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+          </div>
           {createDropdownOpen && (
-            <div
-              style={{
-                position: "absolute",
-                top: "50px",
-                left: "14px",
-                right: "14px",
-                backgroundColor: "#ffffff",
-                borderRadius: "8px",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                zIndex: 50,
-                padding: "6px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-              }}
-            >
-              <button
-                id="dropdown-new-group"
-                onClick={() => {
-                  setCurrentView("groups");
-                  handleOpenAddModal();
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  color: "#1e293b",
-                  fontSize: "12.5px",
-                  borderRadius: "4px",
-                  textAlign: "left",
-                }}
-              >
-                <span>📁 + New Accounting Group</span>
-              </button>
-              <button
-                id="dropdown-new-ledger"
-                onClick={() => {
-                  setCurrentView("ledgers");
-                  handleOpenAddLedgerModal();
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  color: "#1e293b",
-                  fontSize: "12.5px",
-                  borderRadius: "4px",
-                  textAlign: "left",
-                }}
-              >
-                <span>👤 + New Ledger Account</span>
-              </button>
+            <div className={styles.sidebarCreateMenu}>
+              <button id="dropdown-new-group" type="button" onClick={() => { setCurrentView("groups"); handleOpenAddModal(); }}>Create Group</button>
+              <button id="dropdown-new-ledger" type="button" onClick={() => { setCurrentView("ledgers"); handleOpenAddLedgerModal(); }}>Create Ledger</button>
             </div>
           )}
         </div>
 
-        {/* Sidebar Nav: ONLY ACCOUNTING MASTERS */}
-        <nav className={styles.sidebarNav}>
+        <nav className={styles.sidebarNav} aria-label="Accounting masters">
           <div className={styles.navSection}>
-            <div className={styles.sectionHeader}>ACCOUNTING MASTERS</div>
-
-            {/* 1. Groups Master */}
-            <button
-              id="nav-groups-master"
-              onClick={() => setCurrentView("groups")}
-              className={`${styles.navItem} ${currentView === "groups" ? styles.navItemActive : ""}`}
-            >
-              <div className={styles.navItemLeft}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
+            <div className={styles.sectionHeader}>GENERAL</div>
+            <button id="nav-groups-master" type="button" onClick={() => setCurrentView("groups")} className={styles.navItem + (currentView === "groups" ? " " + styles.navItemActive : "")} aria-current={currentView === "groups" ? "page" : undefined}>
+              <span className={styles.navItemLeft}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>
                 <span>Groups Master</span>
-              </div>
-              <div className={styles.navItemRight}>
-                <span className={styles.navBadge} suppressHydrationWarning>
-                  {isMounted ? ledgerGroups.length : 0}
-                </span>
-              </div>
+              </span>
+              <span className={styles.navBadge} suppressHydrationWarning>{isMounted ? ledgerGroups.length : 0}</span>
             </button>
-
-            {/* 2. Ledgers Master */}
-            <button
-              id="nav-ledgers-master"
-              onClick={() => setCurrentView("ledgers")}
-              className={`${styles.navItem} ${currentView === "ledgers" ? styles.navItemActive : ""}`}
-            >
-              <div className={styles.navItemLeft}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                </svg>
+            <button id="nav-ledgers-master" type="button" onClick={() => setCurrentView("ledgers")} className={styles.navItem + (currentView === "ledgers" ? " " + styles.navItemActive : "")} aria-current={currentView === "ledgers" ? "page" : undefined}>
+              <span className={styles.navItemLeft}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1 0-6h11M5 4v13"/><path d="M9 8h6"/></svg>
                 <span>Ledgers Master</span>
-              </div>
-              <div className={styles.navItemRight}>
-                <span className={styles.navBadge} suppressHydrationWarning>
-                  {isMounted ? ledgers.length : 0}
-                </span>
-              </div>
+              </span>
+              <span className={styles.navBadge} suppressHydrationWarning>{isMounted ? ledgers.length : 0}</span>
             </button>
           </div>
         </nav>
 
-        {/* Sidebar Footer with Reset Data */}
         <div className={styles.sidebarFooter}>
-          <button
-            onClick={handleResetAllData}
-            className={styles.resetDataBtn}
-            title="Clear all stored groups & ledgers"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
+          <button type="button" className={styles.themeToggle} onClick={toggleTheme} aria-pressed={theme === "dark"} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} title={theme === "dark" ? "Light mode" : "Dark mode"}>
+            {theme === "dark" ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M20.9 13a9 9 0 0 1-9.9-9.9A9 9 0 1 0 20.9 13Z"/></svg>}
+            <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+            <span className={styles.themeToggleTrack} aria-hidden="true"><span /></span>
+          </button>
+          <button onClick={handleResetAllData} className={styles.resetDataBtn} title="Clear all stored groups & ledgers">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6M10 10v7m4-7v7"/></svg>
             <span>Reset All Data</span>
           </button>
         </div>
       </aside>
+      )}
 
       {/* -------------------------------------------------------------
           MAIN CONTENT AREA & TOP HEADER
           ------------------------------------------------------------- */}
       <main className={styles.mainWrapper}>
+        {!sidebarVisible && (
+          <div className={styles.sidebarRestoreBar}>
+            <button type="button" className={styles.showSidebarBtn} onClick={() => setSidebarVisible(true)} aria-label="Show sidebar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+              <span>Show sidebar</span>
+            </button>
+            <span className={styles.restoreBrand}><span className={styles.productLogo} aria-hidden="true" />EasyGST Billing</span>
+            <button type="button" className={styles.restoreThemeBtn} onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} title={theme === "dark" ? "Light mode" : "Dark mode"}>{theme === "dark" ? "Light mode" : "Dark mode"}</button>
+          </div>
+        )}
         {/* -------------------------------------------------------------
             PAGE 1: GROUPS MASTER (Clean working accounting page)
             ------------------------------------------------------------- */}
@@ -837,7 +969,7 @@ export default function Home() {
 
                         <td>
                           {group.affectsGrossProfit ? (
-                            <span style={{ color: "#16a34a", fontWeight: 600, fontSize: "12px" }}>✓ Yes</span>
+                             <span style={{ color: "#475569", fontWeight: 600, fontSize: "12px" }}>✓ Yes</span>
                           ) : (
                             <span style={{ color: "#94a3b8", fontSize: "12px" }}>— No</span>
                           )}
@@ -1351,7 +1483,7 @@ export default function Home() {
           ------------------------------------------------------------- */}
       {isLedgerModalOpen && (
         <div className={styles.modalBackdrop} onClick={() => setIsLedgerModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.ledgerModalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -1371,171 +1503,190 @@ export default function Home() {
             </div>
 
             <form onSubmit={handleSaveLedger} className={styles.modalForm}>
-              {/* Ledger Name */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel} htmlFor="ledger-name-input">
-                  Ledger Name <span style={{ color: "#ef4444" }}>*</span>
-                </label>
-                <input
-                  id="ledger-name-input"
-                  type="text"
-                  required
-                  placeholder="e.g. Ramesh Hardware, HDFC Bank, Office Rent"
-                  value={ledgerFormData.name}
-                  onChange={(e) => setLedgerFormData({ ...ledgerFormData, name: e.target.value })}
-                  className={styles.formInput}
-                  autoFocus
-                />
+              <div className={styles.ledgerStepHeader}>
+                <span>Step {ledgerStep + 1} of {LEDGER_STEPS.length}</span>
+                <strong>{LEDGER_STEPS[ledgerStep]}</strong>
               </div>
-
-              {/* Under Group */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel} htmlFor="ledger-under-group-select">
-                  Under Group <span style={{ color: "#ef4444" }}>*</span>
-                </label>
-                <select
-                  id="ledger-under-group-select"
-                  value={ledgerFormData.underGroup}
-                  onChange={(e) => handleGroupSelectInLedgerForm(e.target.value)}
-                  className={styles.formSelect}
-                >
-                  {ledgerGroups.length > 0 ? (
-                    ledgerGroups.map((g) => (
-                      <option key={g.id} value={g.name}>
-                        {g.name} ({g.nature})
-                      </option>
-                    ))
-                  ) : (
-                    <option value="Primary">Primary (No custom groups created yet)</option>
-                  )}
-                </select>
+              <div className={styles.ledgerProgressTrack} role="progressbar" aria-label="Ledger form progress" aria-valuenow={ledgerStep + 1} aria-valuemin={1} aria-valuemax={LEDGER_STEPS.length}>
+                <div className={styles.ledgerProgressFill} style={{ width: ((ledgerStep + 1) / LEDGER_STEPS.length * 100) + "%" }} />
               </div>
-
-              {/* Nature & Balance Row */}
-              <div className={styles.formRowTwo}>
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-nature-select">
-                    Nature
-                  </label>
-                  <select
-                    id="ledger-nature-select"
-                    value={ledgerFormData.nature}
-                    onChange={(e) =>
-                      setLedgerFormData({
-                        ...ledgerFormData,
-                        nature: e.target.value as NatureGroup,
-                      })
-                    }
-                    className={styles.formSelect}
+              <div className={styles.ledgerStepList} aria-label="Ledger form steps">
+                {LEDGER_STEPS.map((label, index) => (
+                  <button key={label} type="button" className={styles.ledgerStepItem + (index === ledgerStep ? " " + styles.ledgerStepItemActive : "") + (index < ledgerStep ? " " + styles.ledgerStepItemDone : "")} disabled={index > ledgerStep} onClick={() => setLedgerStep(index)} aria-current={index === ledgerStep ? "step" : undefined}>
+                    <span className={styles.ledgerStepNumber}>{index < ledgerStep ? "✓" : index + 1}</span>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+              {ledgerStep === 0 && (<>
+              <div className={styles.ledgerSectionTitle}>Ledger details</div>
+              <div className={styles.ledgerFieldGrid}>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-name-input">Name *</label><input id="ledger-name-input" className={styles.formInput} required autoFocus value={ledgerFormData.name} onChange={(e) => setLedgerFormData({ ...ledgerFormData, name: e.target.value })} /></div>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-code-input">Code (optional)</label><input id="ledger-code-input" className={styles.formInput} value={ledgerFormData.code} onChange={(e) => setLedgerFormData({ ...ledgerFormData, code: e.target.value })} /></div>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-under-group-select">Group *</label><select id="ledger-under-group-select" value={ledgerFormData.underGroup} onChange={(e) => handleGroupSelectInLedgerForm(e.target.value)} className={styles.formSelect}>{ledgerGroups.length ? ledgerGroups.map((g) => <option key={g.id} value={g.name}>{g.name} ({g.nature})</option>) : <option value="Primary">Primary</option>}</select></div>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-nature-select">Nature</label><select id="ledger-nature-select" value={ledgerFormData.nature} onChange={(e) => setLedgerFormData({ ...ledgerFormData, nature: e.target.value as NatureGroup })} className={styles.formSelect}><option>Asset</option><option>Expenses</option><option>Income</option><option>Liability</option></select></div>
+              </div>
+              <div className={styles.ledgerSectionTitle}>Credit terms</div>
+              <div className={styles.ledgerFieldGrid}>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-bill-tracking">Maintain bill-by-bill tracking?</label><select id="ledger-bill-tracking" className={styles.formSelect} value={ledgerFormData.trackBillByBill ? "yes" : "no"} onChange={(e) => setLedgerFormData({ ...ledgerFormData, trackBillByBill: e.target.value === "yes" })}><option value="no">No</option><option value="yes">Yes</option></select></div>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-credit-days">Credit days</label><input id="ledger-credit-days" type="number" min="0" step="1" className={styles.formInput} value={ledgerFormData.creditDays} onChange={(e) => setLedgerFormData({ ...ledgerFormData, creditDays: Number(e.target.value) })} /></div>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-credit-limit">Credit limit (₹)</label><input id="ledger-credit-limit" type="number" min="0" step="0.01" className={styles.formInput} value={ledgerFormData.creditLimit} onChange={(e) => setLedgerFormData({ ...ledgerFormData, creditLimit: Number(e.target.value) })} /></div>
+              </div>
+              </>)}
+              {ledgerStep === 1 && (<>
+              <div className={styles.ledgerSectionTitle}>Address and contact</div>
+              <div className={styles.formField}>
+                <span className={styles.formLabel}>Address lines</span>
+                {ledgerFormData.addressLines.map((line, index) => (
+                  <div className={styles.addressLineRow} key={index}>
+                    <input id={"ledger-address-line-" + index} aria-label={"Address line " + (index + 1)} className={styles.formInput} placeholder={"Address line " + (index + 1)} value={line} onChange={(e) => setLedgerFormData({ ...ledgerFormData, addressLines: ledgerFormData.addressLines.map((value, lineIndex) => lineIndex === index ? e.target.value : value) })} />
+                    {index > 0 && <button type="button" className={styles.addressRemoveBtn} onClick={() => setLedgerFormData({ ...ledgerFormData, addressLines: ledgerFormData.addressLines.filter((_, lineIndex) => lineIndex !== index) })} aria-label={"Remove address line " + (index + 1)}>Remove</button>}
+                  </div>
+                ))}
+                <button type="button" className={styles.addAddressLineBtn} onClick={() => setLedgerFormData({ ...ledgerFormData, addressLines: [...ledgerFormData.addressLines, ""] })}>+ Add address line</button>
+              </div>
+              <div className={styles.ledgerFieldGrid}>{([["pincode", "PIN code"], ["country", "Country"], ["state", "State"], ["phone", "Phone"], ["mobile", "Mobile"], ["whatsapp", "WhatsApp"], ["email", "Email"], ["website", "Website"], ["contactPerson", "Contact person"]] as const).map(([key, label]) => <div className={styles.formField} key={key}><label className={styles.formLabel} htmlFor={"ledger-" + key}>{label}</label><input id={"ledger-" + key} className={styles.formInput} type={key === "email" ? "email" : "text"} value={ledgerFormData[key]} onChange={(e) => setLedgerFormData({ ...ledgerFormData, [key]: e.target.value })} /></div>)}</div>
+              </>)}
+              {ledgerStep === 2 && (<>
+              <div className={styles.ledgerSectionTitle}>Tax details</div>
+              <div className={styles.ledgerFieldGrid}>
+                {([["pan", "PAN number"], ["cin", "CIN number"]] as const).map(([key, label]) => <div className={styles.formField} key={key}><label className={styles.formLabel} htmlFor={"ledger-" + key}>{label}</label><input id={"ledger-" + key} className={styles.formInput} value={ledgerFormData[key]} onChange={(e) => setLedgerFormData({ ...ledgerFormData, [key]: e.target.value.toUpperCase() })} /></div>)}
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-gst-registration">GST registration type</label><select id="ledger-gst-registration" className={styles.formSelect} value={ledgerFormData.gstRegistrationType} onChange={(e) => setLedgerFormData({ ...ledgerFormData, gstRegistrationType: e.target.value as "Regular" | "Consumer" | "Unregistered" })}><option>Regular</option><option>Consumer</option><option>Unregistered</option></select></div>
+                <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-gstin-input">GSTIN</label><input id="ledger-gstin-input" className={styles.formInput} value={ledgerFormData.gstin} onChange={(e) => setLedgerFormData({ ...ledgerFormData, gstin: e.target.value.toUpperCase() })} /></div>
+              </div>
+              <div className={styles.ledgerSectionTitle}>Bank details</div>
+              <div className={styles.formField}><label className={styles.formLabel} htmlFor="ledger-has-bank">Add bank details?</label><select id="ledger-has-bank" className={styles.formSelect} value={ledgerFormData.hasBankDetails ? "yes" : "no"} onChange={(e) => setLedgerFormData({ ...ledgerFormData, hasBankDetails: e.target.value === "yes" })}><option value="no">No</option><option value="yes">Yes</option></select></div>
+              {ledgerFormData.hasBankDetails && <div className={styles.ledgerFieldGrid}>{([["bankName", "Bank name"], ["bankAccountNumber", "Account number"], ["bankIfsc", "IFSC code"], ["bankBranch", "Branch"]] as const).map(([key, label]) => <div className={styles.formField} key={key}><label className={styles.formLabel} htmlFor={"ledger-" + key}>{label}</label><input id={"ledger-" + key} className={styles.formInput} value={ledgerFormData[key]} onChange={(e) => setLedgerFormData({ ...ledgerFormData, [key]: key === "bankIfsc" ? e.target.value.toUpperCase() : e.target.value })} /></div>)}</div>}
+              </>)}
+              {ledgerStep === 3 && (<>
+              <div className={styles.openingStockSection}>
+                <div className={styles.openingStockHeader}>
+                  <div className={styles.openingStockTitle}>Opening Balance</div>
+                  <button
+                    type="button"
+                    className={styles.openingStockCollapseBtn}
+                    onClick={() => setOpeningBalanceCollapsed(!openingBalanceCollapsed)}
+                    aria-label={openingBalanceCollapsed ? "Expand Opening Balance" : "Collapse Opening Balance"}
+                    title={openingBalanceCollapsed ? "Expand" : "Collapse"}
                   >
-                    <option value="Asset">Asset</option>
-                    <option value="Expenses">Expenses</option>
-                    <option value="Income">Income</option>
-                    <option value="Liability">Liability</option>
-                  </select>
+                    {openingBalanceCollapsed ? "+" : "−"}
+                  </button>
                 </div>
 
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-balance-input">
-                    Opening Balance (₹)
-                  </label>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <input
-                      id="ledger-balance-input"
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="0.00"
-                      value={ledgerFormData.openingBalance || ""}
-                      onChange={(e) =>
-                        setLedgerFormData({
-                          ...ledgerFormData,
-                          openingBalance: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className={styles.formInput}
-                    />
-                    <div className={styles.drCrToggle}>
+                {!openingBalanceCollapsed && (
+                  <>
+                    <div className={styles.openingStockBanner}>
+                      Onboarding setup only. Enter bill-by-bill opening balance breakup (Bill No, Bill Date, Due Date, Amount, Dr/Cr).
+                    </div>
+
+                    <div className={styles.openingStockTableCard}>
+                      <div className={styles.openingStockGrid}>
+                        <div className={styles.openingStockHeadRow}>
+                          <span>Bill No</span>
+                          <span>Bill Date</span>
+                          <span>Due Date</span>
+                          <span>Amount</span>
+                          <span>Dr / Cr</span>
+                          <span />
+                        </div>
+
+                        {ledgerFormData.openingBills.map((bill) => (
+                          <div className={styles.openingStockDataRow} key={bill.id}>
+                            <input
+                              type="text"
+                              className={styles.openingStockInput}
+                              placeholder="Bill no."
+                              value={bill.reference}
+                              onChange={(e) => updateOpeningBill(bill.id, { reference: e.target.value })}
+                            />
+                            <input
+                              type="date"
+                              className={styles.openingStockInput}
+                              value={bill.billDate}
+                              onChange={(e) => updateOpeningBill(bill.id, { billDate: e.target.value })}
+                            />
+                            <input
+                              type="date"
+                              className={styles.openingStockInput}
+                              value={bill.dueDate}
+                              onChange={(e) => updateOpeningBill(bill.id, { dueDate: e.target.value })}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className={styles.openingStockInput}
+                              placeholder="0.00"
+                              value={bill.amount === 0 ? "" : bill.amount}
+                              onChange={(e) => updateOpeningBill(bill.id, { amount: e.target.value === "" ? 0 : Number(e.target.value) })}
+                            />
+                            <select
+                              className={styles.openingStockSelect}
+                              value={bill.balanceType || ledgerFormData.balanceType || "Dr"}
+                              onChange={(e) => updateOpeningBill(bill.id, { balanceType: e.target.value as "Dr" | "Cr" })}
+                            >
+                              <option value="Dr">Dr</option>
+                              <option value="Cr">Cr</option>
+                            </select>
+                            <button
+                              type="button"
+                              className={styles.openingStockRemoveBtn}
+                              title="Remove bill"
+                              aria-label="Remove bill"
+                              onClick={() => removeOpeningBill(bill.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => setLedgerFormData({ ...ledgerFormData, balanceType: "Dr" })}
-                        className={`${styles.drCrBtn} ${ledgerFormData.balanceType === "Dr" ? styles.drCrBtnActive : ""}`}
+                        onClick={addOpeningBill}
+                        className={styles.openingStockAddBtn}
                       >
-                        Dr
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLedgerFormData({ ...ledgerFormData, balanceType: "Cr" })}
-                        className={`${styles.drCrBtn} ${ledgerFormData.balanceType === "Cr" ? styles.drCrBtnActive : ""}`}
-                      >
-                        Cr
+                        + Add Bill
                       </button>
                     </div>
-                  </div>
-                </div>
+
+                    <div className={styles.openingStockSummary}>
+                      <div className={styles.openingStockSummaryText}>
+                        <span>Total Opening Balance:</span>
+                        <strong>{formatCurrency(totalOpeningBalance)} {totalBalanceType}</strong>
+                        <span className={styles.openingStockCount}>({ledgerFormData.openingBills.length} {ledgerFormData.openingBills.length === 1 ? "entry" : "entries"})</span>
+                      </div>
+                      <div className={styles.openingStockNotesWrap}>
+                        <input
+                          type="text"
+                          className={styles.openingStockNotesInput}
+                          placeholder="Optional notes / remarks..."
+                          value={ledgerFormData.openingBalanceNotes}
+                          onChange={(e) => setLedgerFormData({ ...ledgerFormData, openingBalanceNotes: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* GSTIN & Phone Row */}
-              <div className={styles.formRowTwo}>
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-gstin-input">
-                    GSTIN / Tax ID (Optional)
-                  </label>
-                  <input
-                    id="ledger-gstin-input"
-                    type="text"
-                    placeholder="e.g. 33AABCT1334M1Z5"
-                    value={ledgerFormData.gstin}
-                    onChange={(e) => setLedgerFormData({ ...ledgerFormData, gstin: e.target.value })}
-                    className={styles.formInput}
-                  />
-                </div>
-
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-phone-input">
-                    Phone / Contact (Optional)
-                  </label>
-                  <input
-                    id="ledger-phone-input"
-                    type="text"
-                    placeholder="e.g. +91 98401 22334"
-                    value={ledgerFormData.phone}
-                    onChange={(e) => setLedgerFormData({ ...ledgerFormData, phone: e.target.value })}
-                    className={styles.formInput}
-                  />
-                </div>
+              <div className={styles.ledgerReview}>
+                <strong>Ready to save</strong>
+                <span>{ledgerFormData.name.trim()} · {ledgerFormData.underGroup}</span>
+                <span>{ledgerFormData.addressLines.filter((line) => line.trim()).length} address line(s) · {ledgerFormData.gstRegistrationType}</span>
+                <span>{formatCurrency(totalOpeningBalance)} {totalBalanceType}{ledgerFormData.openingBalanceDate ? " as of " + ledgerFormData.openingBalanceDate : ""}</span>
               </div>
-
-              {/* Address */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel} htmlFor="ledger-address-input">
-                  Address (Optional)
-                </label>
-                <input
-                  id="ledger-address-input"
-                  type="text"
-                  placeholder="e.g. 14, Main Road, Industrial Estate"
-                  value={ledgerFormData.address}
-                  onChange={(e) => setLedgerFormData({ ...ledgerFormData, address: e.target.value })}
-                  className={styles.formInput}
-                />
-              </div>
+              </>)}
 
               {/* Actions */}
               <div className={styles.modalFooter}>
-                <button
-                  type="button"
-                  onClick={() => setIsLedgerModalOpen(false)}
-                  className={styles.cancelBtn}
-                >
-                  Cancel
-                </button>
-                <button
-                  id="btn-save-ledger"
-                  type="submit"
-                  className={styles.saveBtn}
-                >
-                  {editingLedgerId ? "Save Changes" : "Create Ledger"}
+                {ledgerStep === 0 ? (
+                  <button type="button" onClick={() => setIsLedgerModalOpen(false)} className={styles.cancelBtn}>Cancel</button>
+                ) : (
+                  <button type="button" onClick={() => setLedgerStep((step) => step - 1)} className={styles.cancelBtn}>Back</button>
+                )}
+                <button id="btn-save-ledger" type="submit" className={styles.saveBtn}>
+                  {ledgerStep < LEDGER_STEPS.length - 1 ? "Next step" : editingLedgerId ? "Save Changes" : "Create Ledger"}
                 </button>
               </div>
             </form>

@@ -5,33 +5,33 @@
 
 :root {
   /* Brand Green Tokens */
-  --brand-green: #16a34a;
-  --brand-green-hover: #15803d;
-  --brand-green-dark: #166534;
-  --brand-green-light: #dcfce7;
-  --brand-green-subtle: #f0fdf4;
-  --brand-green-border: #bbf7d0;
+  --brand-green: #5d5d5d;
+  --brand-green-hover: #4b4b4b;
+  --brand-green-dark: #3d3d3d;
+  --brand-green-light: #ececec;
+  --brand-green-subtle: #f7f7f7;
+  --brand-green-border: #d9d9d9;
 
   /* App Surface & Background (Curved Floating Layout Theme with Light Full Background) */
   --bg-app: #f1f5f9;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ffffff;
-  --bg-sidebar: #041a10;
+  --bg-sidebar: #0f0f0f;
   --bg-header: #ffffff;
   --bg-muted: #f8fafc;
   --bg-hover: #f1f5f9;
 
   /* Sidebar Tokens (Ultra Dark Green Theme) */
-  --sidebar-bg: #041a10;
-  --sidebar-border: #0a291b;
-  --sidebar-text: #a7f3d0;
+  --sidebar-bg: #0f0f0f;
+  --sidebar-border: #1a1a1a;
+  --sidebar-text: #cdcdcd;
   --sidebar-text-hover: #ffffff;
   --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
-  --sidebar-active-bg: #16a34a;
+  --sidebar-active-bg: #5d5d5d;
   --sidebar-active-text: #ffffff;
-  --sidebar-category-text: #4ade80;
-  --sidebar-cta-bg: #16a34a;
-  --sidebar-cta-hover: #22c55e;
+  --sidebar-category-text: #949494;
+  --sidebar-cta-bg: #5d5d5d;
+  --sidebar-cta-hover: #747474;
   --sidebar-cta-text: #ffffff;
 
   /* Text Tokens */
@@ -44,14 +44,14 @@
   /* Border Tokens */
   --border-light: #e2e8f0;
   --border-subtle: #f1f5f9;
-  --border-focus: #16a34a;
+  --border-focus: #5d5d5d;
 
   /* Overview Card Accents */
   --color-collect-bg: #ffffff;
   --color-collect-border: #e2e8f0;
-  --color-collect-text: #15803d;
-  --color-collect-badge: #dcfce7;
-  --color-collect-icon: #16a34a;
+  --color-collect-text: #4b4b4b;
+  --color-collect-badge: #ececec;
+  --color-collect-icon: #5d5d5d;
 
   --color-pay-bg: #ffffff;
   --color-pay-border: #e2e8f0;
@@ -66,9 +66,9 @@
   --color-balance-icon: #2563eb;
 
   /* Nature Group Colors */
-  --nature-asset-bg: #f0fdf4;
-  --nature-asset-text: #166534;
-  --nature-asset-border: #bbf7d0;
+  --nature-asset-bg: #f7f7f7;
+  --nature-asset-text: #3d3d3d;
+  --nature-asset-border: #d9d9d9;
 
   --nature-expenses-bg: #fef2f2;
   --nature-expenses-text: #991b1b;
@@ -154,3 +154,8 @@ input, select, textarea {
 .animate-fade-in {
   animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+html[data-theme="dark"],
+html[data-theme="dark"] body { background: #000; color-scheme: dark; }
+html[data-theme="light"],
+html[data-theme="light"] body { background: #f7f7f7; color-scheme: light; }

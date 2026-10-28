@@ -10,6 +10,15 @@ export interface LedgerGroup {
   isSystem?: boolean;
 }
 
+export interface OpeningBill {
+  id: string;
+  reference: string;
+  billDate: string;
+  dueDate: string;
+  amount: number;
+  balanceType?: 'Dr' | 'Cr';
+}
+
 export interface Ledger {
   id: string;
   name: string;
@@ -17,8 +26,33 @@ export interface Ledger {
   nature: NatureGroup;
   openingBalance: number;
   balanceType: 'Dr' | 'Cr';
+  openingBalanceDate?: string;
+  openingBalanceReference?: string;
+  openingBalanceNotes?: string;
+  openingBills?: OpeningBill[];
+  code?: string;
+  trackBillByBill?: boolean;
+  creditDays?: number;
+  creditLimit?: number;
+  gstRegistrationType?: "Regular" | "Consumer" | "Unregistered";
   gstin?: string;
+  pan?: string;
+  cin?: string;
+  pincode?: string;
+  country?: string;
+  state?: string;
+  mobile?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  contactPerson?: string;
+  hasBankDetails?: boolean;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+  bankBranch?: string;
   address?: string;
+  addressLines?: string[];
   phone?: string;
   createdAt: string;
 }
