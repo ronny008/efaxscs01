@@ -5,6 +5,7 @@ import styles from "./page.module.css";
 import { LedgerGroup, Ledger, NatureGroup } from "../types/erp";
 import { INITIAL_LEDGER_GROUPS } from "../data/initialLedgerGroups";
 import { INITIAL_LEDGERS } from "../data/initialLedgers";
+import CreateLedgerPage from "../components/ledger/CreateLedgerPage";
 
 const NATURE_OPTIONS: { key: NatureGroup; label: string; desc: string; badgeClass: string }[] = [
   { key: "Asset", label: "Asset", desc: "Economic resources, Bank, Cash, Debtors, Inventory & Equipment", badgeClass: styles.badgeAsset },
@@ -15,7 +16,7 @@ const NATURE_OPTIONS: { key: NatureGroup; label: string; desc: string; badgeClas
 
 export default function Home() {
   // Navigation & View State
-  const [currentView, setCurrentView] = useState<"dashboard" | "ledger-groups" | "ledgers">("ledger-groups");
+  const [currentView, setCurrentView] = useState<"dashboard" | "ledger-groups" | "ledgers" | "create-ledger">("ledger-groups");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
   const [masterExpanded, setMasterExpanded] = useState(true);
@@ -56,57 +57,49 @@ export default function Home() {
     phone: "",
   });
 
-
-  // Sync with LocalStorage on mount (Clearing previous mock data)
+  // Load saved state from LocalStorage on mount to prevent SSR hydration mismatches
   useEffect(() => {
-    const hasCleared = localStorage.getItem("erp_mock_data_cleared_v3");
-    if (!hasCleared) {
-      localStorage.removeItem("erp_ledger_groups");
-      localStorage.removeItem("erp_ledgers");
-      localStorage.setItem("erp_mock_data_cleared_v3", "true");
-      setLedgerGroups([]);
-      setLedgers([]);
-    } else {
+    try {
+      const savedTheme = localStorage.getItem("erp_theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setThemeMode(savedTheme);
+      }
       const savedGroups = localStorage.getItem("erp_ledger_groups");
       if (savedGroups) {
-        try {
-          setLedgerGroups(JSON.parse(savedGroups));
-        } catch (e) {
-          console.error("Failed to load saved ledger groups", e);
-        }
-      } else {
-        setLedgerGroups([]);
+        setLedgerGroups(JSON.parse(savedGroups));
       }
-
       const savedLedgers = localStorage.getItem("erp_ledgers");
       if (savedLedgers) {
-        try {
-          setLedgers(JSON.parse(savedLedgers));
-        } catch (e) {
-          console.error("Failed to load saved ledgers", e);
-        }
-      } else {
-        setLedgers([]);
+        setLedgers(JSON.parse(savedLedgers));
       }
-    }
-
-    const savedTheme = localStorage.getItem("erp_theme");
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setThemeMode(savedTheme);
-      document.documentElement.setAttribute("data-theme", savedTheme);
+    } catch (e) {
+      console.error("Failed to read from localStorage:", e);
     }
   }, []);
+
+  // Sync DOM data-theme with themeMode state
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", themeMode);
+  }, [themeMode]);
 
   // Save Groups to LocalStorage
   const persistGroups = (groups: LedgerGroup[]) => {
     setLedgerGroups(groups);
-    localStorage.setItem("erp_ledger_groups", JSON.stringify(groups));
+    try {
+      localStorage.setItem("erp_ledger_groups", JSON.stringify(groups));
+    } catch (e) {
+      console.error("Failed to persist groups to localStorage:", e);
+    }
   };
 
   // Save Ledgers to LocalStorage
   const persistLedgers = (data: Ledger[]) => {
     setLedgers(data);
-    localStorage.setItem("erp_ledgers", JSON.stringify(data));
+    try {
+      localStorage.setItem("erp_ledgers", JSON.stringify(data));
+    } catch (e) {
+      console.error("Failed to persist ledgers to localStorage:", e);
+    }
   };
 
   // Toggle Theme
@@ -206,14 +199,39 @@ export default function Home() {
   };
 
   const parentGroupOptions = useMemo(() => {
-    const list = ["Primary"];
+    const list: { name: string; nature?: NatureGroup }[] = [{ name: "Primary" }];
     ledgerGroups.forEach((g) => {
-      if (g.id !== editingGroupId && !list.includes(g.name)) {
-        list.push(g.name);
+      if (g.id !== editingGroupId && !list.some((item) => item.name === g.name)) {
+        list.push({ name: g.name, nature: g.nature });
       }
     });
     return list;
   }, [ledgerGroups, editingGroupId]);
+
+  // Handle Under Group selection in Group modal (auto-inherits parent's Nature & affectsGrossProfit)
+  const handleUnderGroupChange = (selectedUnderGroup: string) => {
+    if (selectedUnderGroup === "Primary") {
+      setFormData((prev) => ({
+        ...prev,
+        underGroup: "Primary",
+      }));
+    } else {
+      const parent = ledgerGroups.find((g) => g.name === selectedUnderGroup);
+      if (parent) {
+        setFormData((prev) => ({
+          ...prev,
+          underGroup: selectedUnderGroup,
+          nature: parent.nature,
+          affectsGrossProfit: parent.affectsGrossProfit ?? (parent.nature === "Expenses" || parent.nature === "Income"),
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          underGroup: selectedUnderGroup,
+        }));
+      }
+    }
+  };
 
   // -------------------------------------------------------------
   // LEDGERS LOGIC
@@ -354,7 +372,9 @@ export default function Home() {
       <aside className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
         {/* Brand Header */}
         <div className={styles.brandSection}>
-          <div className={styles.brandLogo}>B</div>
+          <div className={styles.brandLogo} title="Billing ERP">
+            <img src="/logo.png" alt="Billing ERP Logo" className={styles.brandLogoImg} />
+          </div>
           {!sidebarCollapsed && (
             <div className={styles.brandText}>
               <div className={styles.brandTitleRow}>
@@ -450,7 +470,7 @@ export default function Home() {
                       <button
                         id="nav-ledgers"
                         onClick={() => setCurrentView("ledgers")}
-                        className={`${styles.subnavItem} ${currentView === "ledgers" ? styles.subnavItemActive : ""}`}
+                        className={`${styles.subnavItem} ${currentView === "ledgers" || currentView === "create-ledger" ? styles.subnavItemActive : ""}`}
                         title="Ledgers"
                       >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -529,7 +549,9 @@ export default function Home() {
         <header className={styles.topHeader}>
           <div className={styles.headerLeft}>
             <span className={styles.headerBreadcrumb}>
-              {currentView === "ledgers"
+              {currentView === "create-ledger"
+                ? "Master / Accounting Master / Ledgers / Create Ledger"
+                : currentView === "ledgers"
                 ? "Master / Accounting Master / Ledgers"
                 : currentView === "dashboard"
                 ? "Today"
@@ -598,7 +620,7 @@ export default function Home() {
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  <span>+ New Group</span>
+                  <span>New Group</span>
                 </button>
               </div>
             </div>
@@ -613,10 +635,6 @@ export default function Home() {
               <div>
                 <span className={styles.breadcrumbBadge}>CHART OF ACCOUNTS</span>
                 <h1 className={styles.heroHeading}>Groups Master</h1>
-                <p className={styles.heroDescription}>
-                  Configure primary accounting groups, parent hierarchy (Under Group), and their 4 core natures: 
-                  <strong> Asset, Expenses, Income, Liability</strong>.
-                </p>
               </div>
 
               <button
@@ -628,7 +646,7 @@ export default function Home() {
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                <span>+ New Group</span>
+                <span>New Group</span>
               </button>
             </div>
 
@@ -791,6 +809,21 @@ export default function Home() {
               </table>
             </div>
           </div>
+        ) : currentView === "create-ledger" ? (
+          /* -------------------------------------------------------------
+              VIEW 4: CREATE LEDGER (FULL-PAGE ACCORDING TO SPEC)
+              ------------------------------------------------------------- */
+          <div className="animate-fade-in" style={{ width: "100%" }}>
+            <CreateLedgerPage
+              onBack={() => setCurrentView("ledgers")}
+              onSuccess={(newLedger) => {
+                persistLedgers([newLedger, ...ledgers]);
+                setCurrentView("ledgers");
+              }}
+              existingGroups={ledgerGroups}
+              existingLedgers={ledgers}
+            />
+          </div>
         ) : (
           /* -------------------------------------------------------------
               VIEW 3: MASTER DATA - LEDGERS MASTER (FUNCTIONAL)
@@ -801,21 +834,18 @@ export default function Home() {
               <div>
                 <span className={styles.breadcrumbBadge}>ACCOUNTING MASTER</span>
                 <h1 className={styles.heroHeading}>Ledgers Master</h1>
-                <p className={styles.heroDescription}>
-                  Individual ledger accounts categorized under Groups with opening balances, Dr/Cr classification, and GSTIN compliance.
-                </p>
               </div>
 
               <button
                 id="btn-create-ledger"
-                onClick={() => handleOpenAddLedgerModal(selectedLedgerNatureFilter !== "All" ? selectedLedgerNatureFilter : "Asset")}
+                onClick={() => setCurrentView("create-ledger")}
                 className={styles.primaryBtn}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                <span>+ New Ledger</span>
+                <span>New Ledger</span>
               </button>
             </div>
 
@@ -1050,12 +1080,12 @@ export default function Home() {
                 <select
                   id="under-group-select"
                   value={formData.underGroup}
-                  onChange={(e) => setFormData({ ...formData, underGroup: e.target.value })}
+                  onChange={(e) => handleUnderGroupChange(e.target.value)}
                   className={styles.formSelect}
                 >
                   {parentGroupOptions.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt === "Primary" ? "Primary (Top-level)" : `Under: ${opt}`}
+                    <option key={opt.name} value={opt.name}>
+                      {opt.name === "Primary" ? "Primary (Top-level)" : `Under: ${opt.name} (${opt.nature})`}
                     </option>
                   ))}
                 </select>
@@ -1063,36 +1093,63 @@ export default function Home() {
 
               {/* Nature of Group */}
               <div className={styles.formField}>
-                <label className={styles.formLabel}>
-                  Nature of Group (4 Core Accounting Pillars) <span style={{ color: "#ef4444" }}>*</span>
-                </label>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+                  <label className={styles.formLabel} style={{ marginBottom: 0 }}>
+                    Nature of Group (4 Core Accounting Pillars) <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  {formData.underGroup !== "Primary" && (
+                    <span className={styles.inheritedBadge}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Inherited from {formData.underGroup}
+                    </span>
+                  )}
+                </div>
+                <span className={styles.formLabelDesc}>
+                  {formData.underGroup === "Primary"
+                    ? "Top-level Primary groups define their own nature."
+                    : `Automatically inherited from parent group "${formData.underGroup}". To choose a different nature, set Under Group to "Primary" or select another parent.`}
+                </span>
                 <div className={styles.natureRadioGroup}>
-                  {NATURE_OPTIONS.map((opt) => (
-                    <div
-                      key={opt.key}
-                      id={`radio-nature-${opt.key.toLowerCase()}`}
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          nature: opt.key,
-                          affectsGrossProfit: opt.key === "Expenses" || opt.key === "Income",
-                        })
-                      }
-                      className={`${styles.natureRadioCard} ${
-                        formData.nature === opt.key ? styles.natureRadioSelected : ""
-                      }`}
-                    >
-                      <div className={styles.natureRadioHeader}>
-                        <span className={styles.natureRadioName}>{opt.label}</span>
-                        {formData.nature === opt.key && (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-emerald)" strokeWidth="3">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
+                  {NATURE_OPTIONS.map((opt) => {
+                    const isSelected = formData.nature === opt.key;
+                    const isInherited = formData.underGroup !== "Primary";
+                    const isDisabled = isInherited && !isSelected;
+                    return (
+                      <div
+                        key={opt.key}
+                        id={`radio-nature-${opt.key.toLowerCase()}`}
+                        onClick={() => {
+                          if (isInherited) return;
+                          setFormData({
+                            ...formData,
+                            nature: opt.key,
+                            affectsGrossProfit: opt.key === "Expenses" || opt.key === "Income",
+                          });
+                        }}
+                        className={`${styles.natureRadioCard} ${
+                          isSelected ? styles.natureRadioSelected : ""
+                        } ${isDisabled ? styles.natureRadioDisabled : ""}`}
+                        style={isInherited ? { cursor: isSelected ? "default" : "not-allowed" } : undefined}
+                        title={
+                          isDisabled
+                            ? `Nature is automatically locked to ${formData.nature} (inherited from ${formData.underGroup})`
+                            : undefined
+                        }
+                      >
+                        <div className={styles.natureRadioHeader}>
+                          <span className={styles.natureRadioName}>{opt.label}</span>
+                          {isSelected && (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-emerald)" strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={styles.natureRadioSubtext}>{opt.desc}</span>
                       </div>
-                      <span className={styles.natureRadioSubtext}>{opt.desc}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
