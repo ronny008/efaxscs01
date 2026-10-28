@@ -1,3 +1,3 @@
-import { Ledger } from '../types/erp';
+import { Ledger } from './types';
 
 export const INITIAL_LEDGERS: Ledger[] = [];

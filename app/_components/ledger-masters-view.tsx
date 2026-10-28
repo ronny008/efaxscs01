@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
-import styles from "./page.module.css";
-import { LedgerGroup, Ledger, NatureGroup, OpeningBill } from "../types/erp";
-import { INITIAL_LEDGER_GROUPS } from "../data/initialLedgerGroups";
-import { INITIAL_LEDGERS } from "../data/initialLedgers";
+import styles from "./ledger-masters-view.module.css";
+import { LedgerGroup, Ledger, NatureGroup, OpeningBill } from "@/lib/ledger/types";
+import { INITIAL_LEDGER_GROUPS } from "@/lib/ledger/initialLedgerGroups";
+import { INITIAL_LEDGERS } from "@/lib/ledger/initialLedgers";
 
 const emptySubscribe = () => () => {};
 
@@ -17,7 +17,7 @@ const NATURE_OPTIONS: { key: NatureGroup; label: string; badgeClass: string }[] 
   { key: "Liability", label: "Liability", badgeClass: styles.badgeLiability },
 ];
 
-export default function Home() {
+export function LedgerMastersView() {
   const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   // Navigation: Only working accounting masters (Groups & Ledgers)
