@@ -10,16 +10,60 @@ export interface LedgerGroup {
   isSystem?: boolean;
 }
 
+export type GstRegistrationType = 'Regular' | 'Composition' | 'Consumer' | 'Unregistered';
+
+export interface OpeningBillDetail {
+  id: string;
+  billNo: string;
+  billDate: string;
+  dueDate?: string;
+  amount: number;
+  drCr: 'Dr' | 'Cr';
+}
+
 export interface Ledger {
   id: string;
   name: string;
+  code?: string;
   underGroup: string; // Group Name it belongs to
   nature: NatureGroup;
+
+  // Billing & Credit Settings
+  maintainBillByBill?: boolean;
+  creditDays?: number;
+  creditLimit?: number;
+
+  // Address and Contact Details
+  address?: string;
+  contactPerson?: string;
+  phone?: string;
+  mobile?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  pincode?: string;
+  country?: string;
+  state?: string;
+
+  // Business and Tax Details
+  pan?: string;
+  cin?: string;
+  gstType?: GstRegistrationType;
+  gstin?: string;
+
+  // Bank Details
+  maintainBankDetails?: boolean;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  branchName?: string;
+
+  // Opening Balance
   openingBalance: number;
   balanceType: 'Dr' | 'Cr';
-  gstin?: string;
-  address?: string;
-  phone?: string;
+  openingBills?: OpeningBillDetail[];
+
   createdAt: string;
 }
 

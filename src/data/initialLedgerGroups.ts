@@ -1,3 +1,147 @@
 import { LedgerGroup } from '../types/erp';
 
-export const INITIAL_LEDGER_GROUPS: LedgerGroup[] = [];
+export const INITIAL_LEDGER_GROUPS: LedgerGroup[] = [
+  // Assets
+  {
+    id: "grp-cur-assets",
+    name: "Current Assets",
+    underGroup: "Primary",
+    nature: "Asset",
+    affectsGrossProfit: false,
+    code: "1000",
+  },
+  {
+    id: "grp-cash-hand",
+    name: "Cash-in-Hand",
+    underGroup: "Current Assets",
+    nature: "Asset",
+    affectsGrossProfit: false,
+    code: "1010",
+  },
+  {
+    id: "grp-bank-accounts",
+    name: "Bank Accounts",
+    underGroup: "Current Assets",
+    nature: "Asset",
+    affectsGrossProfit: false,
+    code: "1020",
+  },
+  {
+    id: "grp-fixed-assets",
+    name: "Fixed Assets",
+    underGroup: "Primary",
+    nature: "Asset",
+    affectsGrossProfit: false,
+    code: "1100",
+  },
+  {
+    id: "grp-furniture",
+    name: "Furniture",
+    underGroup: "Fixed Assets",
+    nature: "Asset",
+    affectsGrossProfit: false,
+    code: "1110",
+  },
+  {
+    id: "grp-plant-machinery",
+    name: "Plant & Machinery",
+    underGroup: "Fixed Assets",
+    nature: "Asset",
+    affectsGrossProfit: false,
+    code: "1120",
+  },
+
+  // Liabilities
+  {
+    id: "grp-cur-liabilities",
+    name: "Current Liabilities",
+    underGroup: "Primary",
+    nature: "Liability",
+    affectsGrossProfit: false,
+    code: "2000",
+  },
+  {
+    id: "grp-sundry-creditors",
+    name: "Sundry Creditors",
+    underGroup: "Current Liabilities",
+    nature: "Liability",
+    affectsGrossProfit: false,
+    code: "2010",
+  },
+  {
+    id: "grp-duties-taxes",
+    name: "Duties & Taxes",
+    underGroup: "Current Liabilities",
+    nature: "Liability",
+    affectsGrossProfit: false,
+    code: "2020",
+  },
+
+  // Expenses
+  {
+    id: "grp-direct-expenses",
+    name: "Direct Expenses",
+    underGroup: "Primary",
+    nature: "Expenses",
+    affectsGrossProfit: true,
+    code: "3000",
+  },
+  {
+    id: "grp-factory-wages",
+    name: "Factory Wages",
+    underGroup: "Direct Expenses",
+    nature: "Expenses",
+    affectsGrossProfit: true,
+    code: "3010",
+  },
+  {
+    id: "grp-indirect-expenses",
+    name: "Indirect Expenses",
+    underGroup: "Primary",
+    nature: "Expenses",
+    affectsGrossProfit: false,
+    code: "3100",
+  },
+  {
+    id: "grp-office-rent",
+    name: "Office Rent",
+    underGroup: "Indirect Expenses",
+    nature: "Expenses",
+    affectsGrossProfit: false,
+    code: "3110",
+  },
+
+  // Income
+  {
+    id: "grp-direct-income",
+    name: "Direct Income",
+    underGroup: "Primary",
+    nature: "Income",
+    affectsGrossProfit: true,
+    code: "4000",
+  },
+  {
+    id: "grp-sales-accounts",
+    name: "Sales Accounts",
+    underGroup: "Direct Income",
+    nature: "Income",
+    affectsGrossProfit: true,
+    code: "4010",
+  },
+  {
+    id: "grp-indirect-income",
+    name: "Indirect Income",
+    underGroup: "Primary",
+    nature: "Income",
+    affectsGrossProfit: false,
+    code: "4100",
+  },
+  {
+    id: "grp-discount-received",
+    name: "Discount Received",
+    underGroup: "Indirect Income",
+    nature: "Income",
+    affectsGrossProfit: false,
+    code: "4110",
+  },
+];
