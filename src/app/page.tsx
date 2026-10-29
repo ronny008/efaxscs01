@@ -7,6 +7,7 @@ import { INITIAL_LEDGER_GROUPS } from "../data/initialLedgerGroups";
 import { INITIAL_LEDGERS } from "../data/initialLedgers";
 import CreateLedgerPage from "../components/ledger/CreateLedgerPage";
 import LedgerModal from "../components/ledger/LedgerModal";
+import ItemsPage from "../components/inventory/ItemsPage";
 
 const NATURE_OPTIONS: { key: NatureGroup; label: string; desc: string; badgeClass: string }[] = [
   { key: "Asset", label: "Asset", desc: "Economic resources, Bank, Cash, Debtors, Inventory & Equipment", badgeClass: styles.badgeAsset },
@@ -17,11 +18,13 @@ const NATURE_OPTIONS: { key: NatureGroup; label: string; desc: string; badgeClas
 
 export default function Home() {
   // Navigation & View State
-  const [currentView, setCurrentView] = useState<"dashboard" | "ledger-groups" | "ledgers" | "create-ledger">("ledger-groups");
+  const [currentView, setCurrentView] = useState<"dashboard" | "ledger-groups" | "ledgers" | "create-ledger" | "items">("items");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
   const [masterExpanded, setMasterExpanded] = useState(true);
   const [accountingExpanded, setAccountingExpanded] = useState(true);
+  const [inventoryExpanded, setInventoryExpanded] = useState(true);
+  const [itemsCount, setItemsCount] = useState<number>(0);
 
   // Groups Master State
   const [ledgerGroups, setLedgerGroups] = useState<LedgerGroup[]>(INITIAL_LEDGER_GROUPS);
@@ -62,6 +65,13 @@ export default function Home() {
       const savedLedgers = localStorage.getItem("erp_ledgers");
       if (savedLedgers) {
         setLedgers(JSON.parse(savedLedgers));
+      }
+      const savedItems = localStorage.getItem("erp_inventory_items");
+      if (savedItems) {
+        const parsed = JSON.parse(savedItems);
+        if (Array.isArray(parsed)) {
+          setItemsCount(parsed.length);
+        }
       }
     } catch (e) {
       console.error("Failed to read from localStorage:", e);
@@ -412,21 +422,55 @@ export default function Home() {
                 </div>
 
                 {/* 2. Inventory Master */}
-                <button
-                  id="nav-inventory-master"
-                  onClick={() => {}}
-                  className={styles.navParentItem}
-                  title="Inventory Master"
-                >
-                  <div className={styles.navParentLeft}>
-                    <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                <div>
+                  <button
+                    id="nav-inventory-master"
+                    onClick={() => setInventoryExpanded(!inventoryExpanded)}
+                    className={styles.navParentItem}
+                    title="Inventory Master"
+                  >
+                    <div className={styles.navParentLeft}>
+                      <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                        <line x1="12" y1="22.08" x2="12" y2="12" />
+                      </svg>
+                      <span>Inventory Master</span>
+                    </div>
+                    <svg
+                      className={`${styles.navChevron} ${inventoryExpanded ? styles.navChevronExpanded : ""}`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
                     </svg>
-                    <span>Inventory Master</span>
-                  </div>
-                </button>
+                  </button>
+
+                  {/* Inventory Master -> Items */}
+                  {inventoryExpanded && (
+                    <div className={styles.subnavContainer}>
+                      {/* Items */}
+                      <button
+                        id="nav-inventory-items"
+                        onClick={() => setCurrentView("items")}
+                        className={`${styles.subnavItem} ${currentView === "items" ? styles.subnavItemActive : ""}`}
+                        title="Items"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                          <line x1="12" y1="22.08" x2="12" y2="12" />
+                        </svg>
+                        <span>Items</span>
+                        <span className={`${styles.navBadge} ${styles.navBadgeFeatured}`}>
+                          {itemsCount}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -474,6 +518,8 @@ export default function Home() {
                 ? "Master / Accounting Master / Ledgers / Create Ledger"
                 : currentView === "ledgers"
                 ? "Master / Accounting Master / Ledgers"
+                : currentView === "items"
+                ? "Master / Inventory Master / Items"
                 : currentView === "dashboard"
                 ? "Today"
                 : "Master / Accounting Master / Groups"}
@@ -622,7 +668,7 @@ export default function Home() {
                   id="ledger-table-search"
                   type="text"
                   placeholder="Filter by group or parent..."
-                  value={searchQuery}
+                  value={searchQuery ?? ""}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className={styles.tableSearchInput}
                 />
@@ -745,6 +791,13 @@ export default function Home() {
               existingLedgers={ledgers}
             />
           </div>
+        ) : currentView === "items" ? (
+          /* -------------------------------------------------------------
+              VIEW 5: INVENTORY MASTERS - ITEMS
+              ------------------------------------------------------------- */
+          <div className="animate-fade-in" style={{ width: "100%" }}>
+            <ItemsPage onItemsCountChange={(count) => setItemsCount(count)} />
+          </div>
         ) : (
           /* -------------------------------------------------------------
               VIEW 3: MASTER DATA - LEDGERS MASTER (FUNCTIONAL)
@@ -821,7 +874,7 @@ export default function Home() {
                   id="ledger-search-input"
                   type="text"
                   placeholder="Filter ledgers by name, group, GSTIN..."
-                  value={ledgerSearchQuery}
+                  value={ledgerSearchQuery ?? ""}
                   onChange={(e) => setLedgerSearchQuery(e.target.value)}
                   className={styles.tableSearchInput}
                 />
@@ -983,7 +1036,7 @@ export default function Home() {
                   type="text"
                   required
                   placeholder="e.g. Factory Power & Utilities"
-                  value={formData.name}
+                  value={formData.name ?? ""}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={styles.formInput}
                   autoFocus
@@ -1107,7 +1160,7 @@ export default function Home() {
                   id="group-code-input"
                   type="text"
                   placeholder="e.g. 5140 or AST-BNK"
-                  value={formData.code}
+                  value={formData.code ?? ""}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   className={styles.formInput}
                 />
