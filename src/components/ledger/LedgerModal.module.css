@@ -1,0 +1,556 @@
+/* ==========================================================================
+   LEDGER MODAL STYLES (Matching Edit Ledger Reference Photo)
+   ========================================================================== */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modalCard {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 820px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-main, #111827);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px 24px;
+  border-bottom: 1px solid var(--border-subtle, #f3f4f6);
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main, #111827);
+}
+
+.headerUserIcon {
+  color: var(--text-main, #111827);
+  display: flex;
+  align-items: center;
+}
+
+.btnClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btnClose:hover {
+  color: #374151;
+  background: var(--bg-hover, #f3f4f6);
+}
+
+/* Stepper Header */
+.stepperHeader {
+  padding: 14px 24px 0 24px;
+}
+
+.stepCountRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stepCountText {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stepNameText {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main, #111827);
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: #374151;
+  transition: width 0.25s ease;
+}
+
+/* Stepper 4 Pills */
+.stepperPillsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stepPill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: var(--bg-surface, #ffffff);
+  color: #6b7280;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.stepPill:hover {
+  border-color: #cbd5e1;
+  color: #374151;
+  background: var(--bg-hover, #f9fafb);
+}
+
+.stepPillActive {
+  border-color: #9ca3af;
+  background: #f9fafb;
+  color: #111827;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.stepPillNumber {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #6b7280;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.stepPillActive .stepPillNumber {
+  background: #374151;
+  color: #ffffff;
+}
+
+.stepPillCompleted .stepPillNumber {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.stepPillLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Modal Body */
+.modalBody {
+  padding: 0 24px 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sectionHeading {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main, #111827);
+  margin: 16px 0 12px 0;
+}
+
+.fieldGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+}
+
+.requiredAsterisk {
+  color: #ef4444;
+  margin-left: 3px;
+}
+
+.fieldDesc {
+  font-size: 11.5px;
+  color: #6b7280;
+  margin-top: -2px;
+}
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #111827;
+  background: var(--bg-surface, #ffffff);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.select {
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #111827;
+  background: var(--bg-surface, #ffffff);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.errorText {
+  font-size: 11.5px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+/* Bill-by-bill table in Step 4 */
+.billTableWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.billTableCard {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 8px;
+  padding: 14px;
+  overflow-x: auto;
+}
+
+.billTableInner {
+  min-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.billHeaderRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1.3fr 1.3fr 1.3fr 90px 40px;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 0 4px 6px 4px;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+}
+
+.billItemRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1.3fr 1.3fr 1.3fr 90px 40px;
+  gap: 10px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.billInput {
+  height: 38px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #111827;
+  background-color: var(--bg-surface, #ffffff);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.billInput:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+.billSelect {
+  height: 38px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  background-color: var(--bg-surface, #ffffff);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.billSelectDr {
+  color: #15803d;
+  background-color: #f0fdf4;
+}
+
+.billSelectCr {
+  color: #b91c1c;
+  background-color: #fef2f2;
+}
+
+.billRemoveBtn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: var(--bg-surface, #ffffff);
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.billRemoveBtn:hover:not(:disabled) {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.billRemoveBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.billActionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+  flex-wrap: wrap;
+}
+
+.btnAddBillRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px dashed #15803d;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnAddBillRow:hover {
+  background: #dcfce7;
+}
+
+.billSummaryBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.billSummaryGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.billSummaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.billSummaryLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.billSummaryValue {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.billSummaryValueDr {
+  color: #15803d;
+}
+
+.billSummaryValueCr {
+  color: #b91c1c;
+}
+
+/* Footer */
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 24px 18px 24px;
+  border-top: 1px solid var(--border-subtle, #f3f4f6);
+  background: var(--bg-surface, #ffffff);
+}
+
+.btnCancel {
+  padding: 8px 18px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: var(--bg-surface, #ffffff);
+  color: #374151;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnCancel:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btnPrevious {
+  padding: 8px 18px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: var(--bg-surface, #ffffff);
+  color: #374151;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnPrevious:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btnNext {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btnNext:hover {
+  background: #166534;
+}
+
+.btnSave {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btnSave:hover {
+  background: #166534;
+}
+
+@media (max-width: 640px) {
+  .fieldGrid2 {
+    grid-template-columns: 1fr;
+  }
+  .stepperPillsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -41,18 +41,32 @@
 }
 
 .brandLogo {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
-  background: var(--brand-gradient);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 19px;
-  box-shadow: 0 2px 8px rgba(70, 200, 26, 0.35);
+  box-shadow: 0 2px 8px rgba(70, 200, 26, 0.15);
   flex-shrink: 0;
+  padding: 4px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.brandLogo:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(70, 200, 26, 0.25);
+  border-color: var(--brand-emerald-border);
+}
+
+.brandLogoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .brandText {
@@ -802,10 +816,10 @@
   height: 3px;
 }
 
-.natureStatCard.natureAsset::before { background-color: #46C81A; }
-.natureStatCard.natureExpenses::before { background-color: #dc2626; }
-.natureStatCard.natureIncome::before { background-color: #2563eb; }
-.natureStatCard.natureLiability::before { background-color: #9333ea; }
+.natureStatCard.natureAsset::before { background-color: var(--brand-emerald, #46C81A); }
+.natureStatCard.natureExpenses::before { background-color: var(--brand-emerald, #46C81A); }
+.natureStatCard.natureIncome::before { background-color: var(--brand-emerald, #46C81A); }
+.natureStatCard.natureLiability::before { background-color: var(--brand-emerald, #46C81A); }
 
 .natureStatCard:hover {
   transform: translateY(-2px);
@@ -1289,6 +1303,36 @@
   font-size: 11px;
   color: var(--text-muted);
   line-height: 1.35;
+}
+
+.natureRadioDisabled {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  cursor: not-allowed !important;
+}
+
+.natureRadioDisabled:hover {
+  border-color: var(--border-light) !important;
+  background-color: var(--bg-muted) !important;
+}
+
+.inheritedBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background-color: var(--primary-100);
+  color: var(--brand-emerald-hover);
+  border: 1px solid var(--brand-emerald-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+[data-theme="dark"] .inheritedBadge {
+  background-color: rgba(70, 200, 26, 0.18);
+  color: #7adb63;
+  border-color: rgba(122, 219, 99, 0.3);
 }
 
 /* Toggle Switch */
