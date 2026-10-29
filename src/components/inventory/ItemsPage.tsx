@@ -186,10 +186,6 @@ export default function ItemsPage({ onItemsCountChange }: ItemsPageProps) {
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div className={styles.headerTitles}>
-          <div className={styles.breadcrumbBadge}>
-            <Boxes size={12} />
-            INVENTORY MASTERS
-          </div>
           <h1 className={styles.pageTitle}>Items</h1>
           <p className={styles.pageSubtitle}>
             Manage inventory products and services.

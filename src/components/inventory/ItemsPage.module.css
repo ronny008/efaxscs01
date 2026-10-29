@@ -48,7 +48,7 @@
   font-weight: 700;
   color: var(--text-main, #0f172a);
   letter-spacing: -0.02em;
-  margin-top: 4px;
+  margin: 0;
 }
 
 .pageSubtitle {
