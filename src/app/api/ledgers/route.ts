@@ -82,7 +82,17 @@ export async function POST(request: Request) {
       body.gstRegistrationType &&
       ['Regular', 'Composition'].includes(body.gstRegistrationType);
 
-    if (requiresGSTIN && body.gstin?.trim()) {
+    if (requiresGSTIN) {
+      if (!body.gstin?.trim()) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'GSTIN is mandatory for Regular and Composition registration.',
+            field: 'gstin',
+          },
+          { status: 400 }
+        );
+      }
       const gstinVal = validateGSTINFormat(body.gstin.trim());
       if (!gstinVal.isValid) {
         return NextResponse.json(

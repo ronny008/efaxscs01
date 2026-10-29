@@ -37,7 +37,7 @@ import {
   Plus,
 } from "lucide-react";
 
-export type LedgerSectionTab = "basic" | "address" | "gst" | "banking" | "balance";
+export type LedgerSectionTab = "basic" | "address" | "tax_bank" | "balance";
 
 export interface TabDefinition {
   id: LedgerSectionTab;
@@ -48,11 +48,10 @@ export interface TabDefinition {
 }
 
 export const LEDGER_TABS: TabDefinition[] = [
-  { id: "basic", letter: "A", label: "Basic Information", shortLabel: "Basic Info", icon: Building2 },
-  { id: "address", letter: "B", label: "Contact & Address Details", shortLabel: "Address & Contact", icon: MapPin },
-  { id: "gst", letter: "C", label: "GST & Statutory Tax Details", shortLabel: "GST & Tax", icon: FileText },
-  { id: "banking", letter: "D", label: "Banking Details", shortLabel: "Banking", icon: CreditCard },
-  { id: "balance", letter: "E", label: "Opening Balance", shortLabel: "Opening Balance", icon: Wallet },
+  { id: "basic", letter: "1", label: "Basics", shortLabel: "Basics", icon: Building2 },
+  { id: "address", letter: "2", label: "Contact", shortLabel: "Contact", icon: MapPin },
+  { id: "tax_bank", letter: "3", label: "Tax & bank", shortLabel: "Tax & bank", icon: FileText },
+  { id: "balance", letter: "4", label: "Balance", shortLabel: "Balance", icon: Wallet },
 ];
 
 interface CreateLedgerPageProps {
@@ -272,12 +271,10 @@ export default function CreateLedgerPage({
     return {
       basic: Boolean(formData.name.trim() && formData.underGroup.trim()),
       address: Boolean(formData.addressLine1.trim() || formData.city.trim() || formData.mobile.trim() || formData.email.trim()),
-      gst: Boolean(
+      tax_bank: Boolean(
         formData.gstRegistrationType !== "Regular" ||
         formData.gstin.trim() ||
-        formData.pan.trim()
-      ),
-      banking: Boolean(
+        formData.pan.trim() ||
         !formData.maintainBankDetails ||
         (formData.accountNumber.trim() && formData.confirmAccountNumber.trim())
       ),
@@ -290,21 +287,18 @@ export default function CreateLedgerPage({
     const counts: Record<LedgerSectionTab, number> = {
       basic: 0,
       address: 0,
-      gst: 0,
-      banking: 0,
+      tax_bank: 0,
       balance: 0,
     };
     const basicFields = ["name", "code", "underGroup", "creditDays", "creditLimit"];
     const addressFields = ["addressLine1", "addressLine2", "country", "state", "city", "pincode", "contactPerson", "mobile", "whatsapp", "email"];
-    const gstFields = ["gstRegistrationType", "gstin", "pan"];
-    const bankingFields = ["accountNumber", "confirmAccountNumber", "ifscCode", "accountHolderName", "bankName", "branchName"];
+    const taxBankFields = ["gstRegistrationType", "gstin", "pan", "accountNumber", "confirmAccountNumber", "ifscCode", "accountHolderName", "bankName", "branchName"];
     const balanceFields = ["openingBalance", "balanceType"];
 
     Object.keys(formErrors).forEach((field) => {
       if (basicFields.includes(field)) counts.basic++;
       else if (addressFields.includes(field)) counts.address++;
-      else if (gstFields.includes(field)) counts.gst++;
-      else if (bankingFields.includes(field)) counts.banking++;
+      else if (taxBankFields.includes(field)) counts.tax_bank++;
       else if (balanceFields.includes(field)) counts.balance++;
     });
     return counts;
@@ -313,8 +307,7 @@ export default function CreateLedgerPage({
   const getTabForField = (field: string): LedgerSectionTab => {
     if (["name", "code", "underGroup", "creditDays", "creditLimit"].includes(field)) return "basic";
     if (["addressLine1", "addressLine2", "country", "state", "city", "pincode", "contactPerson", "mobile", "whatsapp", "email"].includes(field)) return "address";
-    if (["gstRegistrationType", "gstin", "pan"].includes(field)) return "gst";
-    if (["accountNumber", "confirmAccountNumber", "ifscCode", "accountHolderName", "bankName", "branchName"].includes(field)) return "banking";
+    if (["gstRegistrationType", "gstin", "pan", "accountNumber", "confirmAccountNumber", "ifscCode", "accountHolderName", "bankName", "branchName"].includes(field)) return "tax_bank";
     if (["openingBalance", "balanceType"].includes(field)) return "balance";
     return "basic";
   };
@@ -324,6 +317,19 @@ export default function CreateLedgerPage({
       setFormErrors((prev) => ({ ...prev, name: "Ledger Name is required before proceeding." }));
       if (fieldRefs.current.name) fieldRefs.current.name.focus();
       return;
+    }
+    if (activeTab === "tax_bank" && isGSTINApplicable) {
+      if (!formData.gstin.trim()) {
+        setFormErrors((prev) => ({ ...prev, gstin: "GSTIN is mandatory for Regular and Composition registration." }));
+        if (fieldRefs.current.gstin) fieldRefs.current.gstin.focus();
+        return;
+      }
+      const gstinVal = validateGSTINFormat(formData.gstin.trim());
+      if (!gstinVal.isValid) {
+        setFormErrors((prev) => ({ ...prev, gstin: gstinVal.message || "Invalid 15-character GSTIN format." }));
+        if (fieldRefs.current.gstin) fieldRefs.current.gstin.focus();
+        return;
+      }
     }
     if (nextTab) {
       setActiveTab(nextTab.id);
@@ -506,15 +512,19 @@ export default function CreateLedgerPage({
     }
 
     // 5. GSTIN & PAN validation
-    if (isGSTINApplicable && formData.gstin.trim()) {
-      const gstinVal = validateGSTINFormat(formData.gstin.trim());
-      if (!gstinVal.isValid) {
-        errors.gstin = gstinVal.message || "Invalid GSTIN format.";
+    if (isGSTINApplicable) {
+      if (!formData.gstin.trim()) {
+        errors.gstin = "GSTIN is mandatory for Regular and Composition registration.";
       } else {
-        // State code mismatch check
-        const selectedStateObj = INDIAN_STATES.find((s) => s.name === formData.state);
-        if (selectedStateObj && gstinVal.stateCode !== selectedStateObj.code) {
-          errors.gstin = `GSTIN state code (${gstinVal.stateCode}) does not match selected State "${formData.state}" (${selectedStateObj.code}).`;
+        const gstinVal = validateGSTINFormat(formData.gstin.trim());
+        if (!gstinVal.isValid) {
+          errors.gstin = gstinVal.message || "Invalid GSTIN format.";
+        } else {
+          // State code mismatch check
+          const selectedStateObj = INDIAN_STATES.find((s) => s.name === formData.state);
+          if (selectedStateObj && gstinVal.stateCode !== selectedStateObj.code) {
+            errors.gstin = `GSTIN state code (${gstinVal.stateCode}) does not match selected State "${formData.state}" (${selectedStateObj.code}).`;
+          }
         }
       }
     }
@@ -1372,9 +1382,9 @@ export default function CreateLedgerPage({
         )}
 
         {/* =========================================================
-            SECTION C: GST AND TAX DETAILS
+            SECTION 3: TAX AND BANK DETAILS
             ========================================================= */}
-        {(viewMode === "all" || activeTab === "gst") && (
+        {(viewMode === "all" || activeTab === "tax_bank") && (
           <div className={`${styles.sectionCard} ${viewMode === "tabbed" ? styles.tabPane : ""}`}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleGroup}>
@@ -1420,47 +1430,46 @@ export default function CreateLedgerPage({
               </span>
             </div>
 
-            {/* GSTIN */}
-            <div className={styles.formGroup}>
-              <div className={styles.labelRow}>
-                <label className={styles.label} htmlFor="field-gstin">
-                  GSTIN {isGSTINApplicable && <span className={styles.requiredAsterisk}>*</span>}
-                </label>
-                {gstinValidation && gstinValidation.isValid && (
-                  <span className={styles.validationBadgeValid}>
-                    <Check size={11} /> Format Valid
+            {/* GSTIN (Only visible and mandatory for Regular & Composition) */}
+            {isGSTINApplicable && (
+              <div className={styles.formGroup}>
+                <div className={styles.labelRow}>
+                  <label className={styles.label} htmlFor="field-gstin">
+                    GSTIN <span className={styles.requiredAsterisk}>*</span>
+                  </label>
+                  {gstinValidation && gstinValidation.isValid && (
+                    <span className={styles.validationBadgeValid}>
+                      <Check size={11} /> Format Valid
+                    </span>
+                  )}
+                  {gstinValidation && !gstinValidation.isValid && (
+                    <span className={styles.validationBadgeWarning}>
+                      <AlertCircle size={11} /> Format Check
+                    </span>
+                  )}
+                </div>
+                <input
+                  id="field-gstin"
+                  ref={(el) => { fieldRefs.current.gstin = el; }}
+                  type="text"
+                  maxLength={15}
+                  placeholder="e.g. 32AAACS1234D1Z2"
+                  value={formData.gstin}
+                  onChange={(e) => handleGSTINChange(e.target.value)}
+                  className={`${styles.input} ${formErrors.gstin ? styles.inputError : ""}`}
+                  style={{ textTransform: "uppercase", letterSpacing: "0.04em", fontFamily: "var(--font-mono)" }}
+                />
+                {formErrors.gstin ? (
+                  <span className={styles.errorMessage}>
+                    <AlertCircle size={13} /> {formErrors.gstin}
                   </span>
-                )}
-                {gstinValidation && !gstinValidation.isValid && (
-                  <span className={styles.validationBadgeWarning}>
-                    <AlertCircle size={11} /> Format Check
+                ) : (
+                  <span className={styles.helperText}>
+                    15-digit alphanumeric format. State code & PAN auto-detected. Mandatory for Regular / Composition.
                   </span>
                 )}
               </div>
-              <input
-                id="field-gstin"
-                ref={(el) => { fieldRefs.current.gstin = el; }}
-                type="text"
-                maxLength={15}
-                disabled={!isGSTINApplicable}
-                placeholder={isGSTINApplicable ? "32AAACS1234D1Z2" : "Not applicable for Consumer / Unregistered"}
-                value={formData.gstin}
-                onChange={(e) => handleGSTINChange(e.target.value)}
-                className={`${styles.input} ${formErrors.gstin ? styles.inputError : ""}`}
-                style={{ textTransform: "uppercase", letterSpacing: "0.04em", fontFamily: "var(--font-mono)" }}
-              />
-              {formErrors.gstin ? (
-                <span className={styles.errorMessage}>
-                  <AlertCircle size={13} /> {formErrors.gstin}
-                </span>
-              ) : (
-                <span className={styles.helperText}>
-                  {isGSTINApplicable
-                    ? "15-digit alphanumeric format. State code & PAN auto-detected."
-                    : "GSTIN is not required for Unregistered or Consumer accounts."}
-                </span>
-              )}
-            </div>
+            )}
 
             {/* PAN Number */}
             <div className={styles.formGroup}>
@@ -1532,10 +1541,7 @@ export default function CreateLedgerPage({
         </div>
         )}
 
-        {/* =========================================================
-            SECTION D: BANKING DETAILS
-            ========================================================= */}
-        {(viewMode === "all" || activeTab === "banking") && (
+        {(viewMode === "all" || activeTab === "tax_bank") && (
           <div className={`${styles.sectionCard} ${viewMode === "tabbed" ? styles.tabPane : ""}`}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleGroup}>

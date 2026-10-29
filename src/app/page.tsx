@@ -6,6 +6,7 @@ import { LedgerGroup, Ledger, NatureGroup } from "../types/erp";
 import { INITIAL_LEDGER_GROUPS } from "../data/initialLedgerGroups";
 import { INITIAL_LEDGERS } from "../data/initialLedgers";
 import CreateLedgerPage from "../components/ledger/CreateLedgerPage";
+import LedgerModal from "../components/ledger/LedgerModal";
 
 const NATURE_OPTIONS: { key: NatureGroup; label: string; desc: string; badgeClass: string }[] = [
   { key: "Asset", label: "Asset", desc: "Economic resources, Bank, Cash, Debtors, Inventory & Equipment", badgeClass: styles.badgeAsset },
@@ -45,17 +46,7 @@ export default function Home() {
 
   // Ledger Modal State
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
-  const [editingLedgerId, setEditingLedgerId] = useState<string | null>(null);
-  const [ledgerFormData, setLedgerFormData] = useState({
-    name: "",
-    underGroup: "Bank Accounts",
-    nature: "Asset" as NatureGroup,
-    openingBalance: 0,
-    balanceType: "Dr" as "Dr" | "Cr",
-    gstin: "",
-    address: "",
-    phone: "",
-  });
+  const [editingLedger, setEditingLedger] = useState<Ledger | null>(null);
 
   // Load saved state from LocalStorage on mount to prevent SSR hydration mismatches
   useEffect(() => {
@@ -258,95 +249,25 @@ export default function Home() {
     };
   }, [ledgers]);
 
-  // Handle Under Group selection in Ledger modal (auto-detects Nature & default balance type)
-  const handleGroupSelectInLedgerForm = (groupName: string) => {
-    const matchedGroup = ledgerGroups.find((g) => g.name === groupName);
-    const nature = matchedGroup ? matchedGroup.nature : "Asset";
-    const defaultBalanceType: "Dr" | "Cr" = nature === "Asset" || nature === "Expenses" ? "Dr" : "Cr";
-
-    setLedgerFormData((prev) => ({
-      ...prev,
-      underGroup: groupName,
-      nature,
-      balanceType: defaultBalanceType,
-    }));
-  };
-
-  const handleOpenAddLedgerModal = (presetNature?: NatureGroup) => {
-    setEditingLedgerId(null);
-    const defaultGroup =
-      ledgerGroups.find((g) => (presetNature ? g.nature === presetNature : g.nature === "Asset"))?.name ||
-      ledgerGroups[0]?.name ||
-      "Bank Accounts";
-    const matched = ledgerGroups.find((g) => g.name === defaultGroup);
-    const nature = matched ? matched.nature : presetNature || "Asset";
-
-    setLedgerFormData({
-      name: "",
-      underGroup: defaultGroup,
-      nature,
-      openingBalance: 0,
-      balanceType: nature === "Asset" || nature === "Expenses" ? "Dr" : "Cr",
-      gstin: "",
-      address: "",
-      phone: "",
-    });
+  const handleOpenAddLedgerModal = (_presetNature?: NatureGroup) => {
+    setEditingLedger(null);
     setIsLedgerModalOpen(true);
   };
 
   const handleOpenEditLedgerModal = (ledger: Ledger) => {
-    setEditingLedgerId(ledger.id);
-    setLedgerFormData({
-      name: ledger.name,
-      underGroup: ledger.underGroup,
-      nature: ledger.nature,
-      openingBalance: ledger.openingBalance,
-      balanceType: ledger.balanceType,
-      gstin: ledger.gstin || "",
-      address: ledger.address || "",
-      phone: ledger.phone || "",
-    });
+    setEditingLedger(ledger);
     setIsLedgerModalOpen(true);
   };
 
-  const handleSaveLedger = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ledgerFormData.name.trim()) return;
-
-    if (editingLedgerId) {
-      const updated = ledgers.map((l) =>
-        l.id === editingLedgerId
-          ? {
-              ...l,
-              name: ledgerFormData.name.trim(),
-              underGroup: ledgerFormData.underGroup,
-              nature: ledgerFormData.nature,
-              openingBalance: Number(ledgerFormData.openingBalance) || 0,
-              balanceType: ledgerFormData.balanceType,
-              gstin: ledgerFormData.gstin.trim() || undefined,
-              address: ledgerFormData.address.trim() || undefined,
-              phone: ledgerFormData.phone.trim() || undefined,
-            }
-          : l
-      );
+  const handleSaveLedgerFromModal = (savedLedger: Ledger) => {
+    if (editingLedger) {
+      const updated = ledgers.map((l) => (l.id === savedLedger.id ? savedLedger : l));
       persistLedgers(updated);
     } else {
-      const newLedger: Ledger = {
-        id: `led-${Date.now()}`,
-        name: ledgerFormData.name.trim(),
-        underGroup: ledgerFormData.underGroup,
-        nature: ledgerFormData.nature,
-        openingBalance: Number(ledgerFormData.openingBalance) || 0,
-        balanceType: ledgerFormData.balanceType,
-        gstin: ledgerFormData.gstin.trim() || undefined,
-        address: ledgerFormData.address.trim() || undefined,
-        phone: ledgerFormData.phone.trim() || undefined,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      persistLedgers([newLedger, ...ledgers]);
+      persistLedgers([savedLedger, ...ledgers]);
     }
-
     setIsLedgerModalOpen(false);
+    setEditingLedger(null);
   };
 
   const handleDeleteLedger = (id: string, name: string) => {
@@ -838,7 +759,7 @@ export default function Home() {
 
               <button
                 id="btn-create-ledger"
-                onClick={() => setCurrentView("create-ledger")}
+                onClick={() => handleOpenAddLedgerModal()}
                 className={styles.primaryBtn}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -1212,231 +1133,19 @@ export default function Home() {
       )}
 
       {/* -------------------------------------------------------------
-          MODAL: CREATE / EDIT LEDGER (FUNCTIONAL)
+          MODAL: CREATE / EDIT LEDGER (4-STEP MATCHING SPEC)
           ------------------------------------------------------------- */}
-      {isLedgerModalOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setIsLedgerModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="12" y1="18" x2="12" y2="12" />
-                  <line x1="9" y1="15" x2="15" y2="15" />
-                </svg>
-                <span>{editingLedgerId ? "Edit Ledger" : "Create Master Ledger"}</span>
-              </div>
-              <button
-                id="btn-close-ledger-modal"
-                onClick={() => setIsLedgerModalOpen(false)}
-                className={styles.modalCloseBtn}
-                title="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveLedger} className={styles.modalForm}>
-              {/* Ledger Name */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel} htmlFor="ledger-name-input">
-                  Ledger Name <span style={{ color: "#ef4444" }}>*</span>
-                </label>
-                <span className={styles.formLabelDesc}>
-                  Enter the specific account title (e.g., State Bank of India, Factory Rent, Sundry Debtor Name).
-                </span>
-                <input
-                  id="ledger-name-input"
-                  type="text"
-                  required
-                  placeholder="e.g. Canara Bank Current A/c 5012"
-                  value={ledgerFormData.name}
-                  onChange={(e) => setLedgerFormData({ ...ledgerFormData, name: e.target.value })}
-                  className={styles.formInput}
-                  autoFocus
-                />
-              </div>
-
-              {/* Under Group */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel} htmlFor="ledger-under-group-select">
-                  Under Group <span style={{ color: "#ef4444" }}>*</span>
-                </label>
-                <span className={styles.formLabelDesc}>
-                  Selecting the parent group automatically assigns the accounting nature.
-                </span>
-                <select
-                  id="ledger-under-group-select"
-                  value={ledgerFormData.underGroup}
-                  onChange={(e) => handleGroupSelectInLedgerForm(e.target.value)}
-                  className={styles.formSelect}
-                >
-                  {ledgerGroups.length === 0 ? (
-                    <option value="Primary">Primary</option>
-                  ) : (
-                    <>
-                      <option value="Primary">Primary</option>
-                      {ledgerGroups.map((g) => (
-                        <option key={g.id} value={g.name}>
-                          {g.name} ({g.nature})
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {/* Nature Badge or Nature Selector */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>
-                  {ledgerFormData.underGroup === "Primary" ? "Accounting Nature" : "Assigned Nature (Auto-linked)"}
-                </label>
-                {ledgerFormData.underGroup === "Primary" ? (
-                  <div className={styles.natureTabs} style={{ marginTop: 4 }}>
-                    {(["Asset", "Expenses", "Income", "Liability"] as const).map((nat) => (
-                      <button
-                        type="button"
-                        key={nat}
-                        onClick={() =>
-                          setLedgerFormData((prev) => ({
-                            ...prev,
-                            nature: nat,
-                            balanceType: nat === "Asset" || nat === "Expenses" ? "Dr" : "Cr",
-                          }))
-                        }
-                        className={`${styles.natureTab} ${
-                          ledgerFormData.nature === nat ? styles.natureTabActive : ""
-                        }`}
-                      >
-                        ● {nat}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div>
-                    <span
-                      className={`${styles.badgeNature} ${
-                        ledgerFormData.nature === "Asset"
-                          ? styles.badgeAsset
-                          : ledgerFormData.nature === "Expenses"
-                          ? styles.badgeExpenses
-                          : ledgerFormData.nature === "Income"
-                          ? styles.badgeIncome
-                          : styles.badgeLiability
-                      }`}
-                    >
-                      ● {ledgerFormData.nature}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Opening Balance and Dr/Cr */}
-              <div className={styles.twoColRow}>
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-balance-input">
-                    Opening Balance (₹)
-                  </label>
-                  <input
-                    id="ledger-balance-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={ledgerFormData.openingBalance || ""}
-                    onChange={(e) => setLedgerFormData({ ...ledgerFormData, openingBalance: Number(e.target.value) || 0 })}
-                    className={styles.formInput}
-                  />
-                </div>
-
-                <div className={styles.formField}>
-                  <label className={styles.formLabel}>Dr / Cr Type</label>
-                  <div className={styles.drCrToggleGroup}>
-                    <button
-                      type="button"
-                      id="btn-balance-dr"
-                      onClick={() => setLedgerFormData({ ...ledgerFormData, balanceType: "Dr" })}
-                      className={`${styles.drCrBtn} ${ledgerFormData.balanceType === "Dr" ? styles.drCrBtnActive : ""}`}
-                    >
-                      Debit (Dr)
-                    </button>
-                    <button
-                      type="button"
-                      id="btn-balance-cr"
-                      onClick={() => setLedgerFormData({ ...ledgerFormData, balanceType: "Cr" })}
-                      className={`${styles.drCrBtn} ${ledgerFormData.balanceType === "Cr" ? styles.drCrBtnActive : ""}`}
-                    >
-                      Credit (Cr)
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* GSTIN / Tax ID */}
-              <div className={styles.formField}>
-                <label className={styles.formLabel} htmlFor="ledger-gstin-input">
-                  GSTIN / Tax Registration No (Optional)
-                </label>
-                <input
-                  id="ledger-gstin-input"
-                  type="text"
-                  placeholder="e.g. 32AAACS1234D1Z2"
-                  value={ledgerFormData.gstin}
-                  onChange={(e) => setLedgerFormData({ ...ledgerFormData, gstin: e.target.value })}
-                  className={styles.formInput}
-                />
-              </div>
-
-              {/* Address & Phone */}
-              <div className={styles.twoColRow}>
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-address-input">
-                    Address / Branch (Optional)
-                  </label>
-                  <input
-                    id="ledger-address-input"
-                    type="text"
-                    placeholder="e.g. MG Road, Kochi"
-                    value={ledgerFormData.address}
-                    onChange={(e) => setLedgerFormData({ ...ledgerFormData, address: e.target.value })}
-                    className={styles.formInput}
-                  />
-                </div>
-
-                <div className={styles.formField}>
-                  <label className={styles.formLabel} htmlFor="ledger-phone-input">
-                    Phone / Contact (Optional)
-                  </label>
-                  <input
-                    id="ledger-phone-input"
-                    type="text"
-                    placeholder="e.g. +91 98470 12345"
-                    value={ledgerFormData.phone}
-                    onChange={(e) => setLedgerFormData({ ...ledgerFormData, phone: e.target.value })}
-                    className={styles.formInput}
-                  />
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className={styles.modalFooter}>
-                <button
-                  type="button"
-                  id="btn-ledger-modal-cancel"
-                  onClick={() => setIsLedgerModalOpen(false)}
-                  className={styles.secondaryBtn}
-                >
-                  Cancel
-                </button>
-                <button type="submit" id="btn-ledger-modal-save" className={styles.primaryBtn}>
-                  {editingLedgerId ? "Update Ledger" : "Save Ledger"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <LedgerModal
+        isOpen={isLedgerModalOpen}
+        onClose={() => {
+          setIsLedgerModalOpen(false);
+          setEditingLedger(null);
+        }}
+        onSave={handleSaveLedgerFromModal}
+        ledgerToEdit={editingLedger}
+        existingGroups={ledgerGroups}
+        existingLedgers={ledgers}
+      />
 
     </div>
   );
