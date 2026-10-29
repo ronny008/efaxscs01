@@ -115,7 +115,7 @@ export default function LedgerModal({
     {
       id: "bill-1",
       billNo: "",
-      billDate: new Date().toISOString().split("T")[0],
+      billDate: "",
       dueDate: "",
       amount: "",
       balanceType: "Dr",

@@ -143,12 +143,19 @@ export default function CreateLedgerPage({
     {
       id: "bill-1",
       billNo: "",
-      billDate: new Date().toISOString().split("T")[0],
+      billDate: "",
       dueDate: "",
       amount: "",
       balanceType: "Dr",
     },
   ]);
+
+    // Set initial bill date on client mount to avoid Next.js unstable prerender error
+  useEffect(() => {
+    setOpeningBills((prev) =>
+      prev.map((b) => (b.billDate ? b : { ...b, billDate: new Date().toISOString().split("T")[0] }))
+    );
+  }, []);
 
   const handleAddBillRow = () => {
     setIsDirty(true);
